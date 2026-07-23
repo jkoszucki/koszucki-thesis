@@ -1,0 +1,39 @@
+paths:
+  input_dir:  /Users/januszkoszucki/Projects/thesis-claude/data/input
+  output_dir: /Users/januszkoszucki/Projects/thesis-claude/data/output
+  gwas_path:  /Users/januszkoszucki/Projects/thesis-claude/data/input/data-gwas
+
+af3_set_colors:
+  # Experimentally active — vivid saturated colors
+  depolymerases_virulent_active:         "#1a7a1a"  # vivid green  (active SSRBH depolymerases)
+  depolymerases_manualsearch_active:     "#1a7a1a"
+  depolymerases_gwas_active:             "#1a7a1a"
+  deacetylases_literature:               "#a07000"  # vivid amber  (active SGNH deacetylases)
+  deacetylases_gwas:                     "#a07000"
+  acetylases_literature_active:          "#0a4d8c"  # vivid blue   (active SSLBH acetylases)
+  # Predicted / not validated — very pale to maximise contrast with active
+  depolymerases_gwas:                    "#b7e4b7"  # pale green
+  depolymerases_manualsearch_inactive:   "#e0e0e0"  # near-white gray
+  depolymerases_manualsearch_notproduced: "#e0e0e0" # near-white gray
+  acetylases_kloci:                      "#4393c3"  # blue — matches sslbh_color (SSLBH acetyltransferases)
+  acetylases_gwas:                       "#4393c3"
+  # best_predictors_gwas: color resolved per-row via ecod_type (sgnh→gold light, ssrbh→green light)
+
+style:
+  dpi: 300
+  axis_label_fontsize: 12
+  axis_label_fontweight: bold
+  tick_fontsize: 8
+  tick_fontweight: bold
+  kpam_color: "#1f77b4"
+  lit_color: "#d62728"
+  pyruvylation_color: "#3283bf"
+  acetylation_color: "#d45515"
+  sgnh_domain_color: "#c9a227"
+  both_color: "#7A3FD4"
+  gray_color: "#bfbfbf"
+  # Chapter 2 ECOD topology colours (used in Figure 1A scatter)
+  no_ecod_color: "#ffffff"          # white fill, gray border — no ECOD hit
+  ssrbh_color: "#a6d1a6"            # light green — single-stranded right-handed β-helix (tail fibers / Pectin-lyase like in ECOD)
+  sslbh_color: "#4393c3"            # blue — single-stranded left-handed β-helix (acetyltransferases)
+

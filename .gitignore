@@ -1,0 +1,22 @@
+.DS_Store
+**/.DS_Store
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*prev*
+scripts/figures/chapter*/bg-*
+**/*_tmp/
+scripts/figures/archive/
+
+# AI agent artifacts — not part of the public repo
+CLAUDE.md
+.claude/
+docs/
+
+# Stale scratch/exploratory material, superseded by scripts/figures/ + scripts/processing/
+other/
+
+# PDF is canonical for script-generated panels/legends (vector, smaller); PNG duplicate not tracked
+scripts/figures/chapter*/plots/figure*-panel*.png
+scripts/figures/chapter*/plots/legends/*.png

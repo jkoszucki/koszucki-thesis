@@ -1,0 +1,11 @@
+structure_id,K-type,DOI,modification,bond_type,monosaccharide,mean_frequency_percent,kpam_reported
+CPS57_K58,K58,10.1016/s0008-6215(00)85559-7,acetylation,O-2,Fru@3,100.0,YES
+CPS34_K33,K33,10.1016/s0008-6215(00)83277-2,acetylation,O-6,Man@C3,100.0,YES
+CPS54_K55,K55,10.1016/s0008-6215(00)83701-5,acetylation,O-2,Rha@C2,100.0,YES
+CPS78_K2,K2,10.1128/mbio.03519-23,acetylation,O-6,Man@C1,40.0,NO
+CPS42_K41,K41,10.1016/S0008-6215(00)83742-8,acetylation,,,,NO
+CPS38_K37,K37,10.1016/s0008-6215(00)84371-2,lactylation,O-4,GlcA@B,100.0,YES
+CPS36_K35,K35,10.1016/s0008-6215(00)90413-0,pyruvylation,"O-6,4",Gal@C1,100.0,YES
+CPS53_K54,K54,10.1016/s0008-6215(00)84967-8,acetylation,O-2,Fuc@C2,100.0,YES
+CPS31_K30,K30,10.1016/0008-6215(79)80031-2,pyruvylation,"O-3,4",Gal@B,100.0,YES
+CPS80_UNK,UNK,10.1016/0008-6215(83)85011-3,acetylation,O-,GlcA@B,33.0,NO

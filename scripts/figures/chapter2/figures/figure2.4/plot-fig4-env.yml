@@ -1,0 +1,35 @@
+name: figure4_env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  # Core language
+  - python=3.10
+
+  # Data stack (allow minor/patch updates within major)
+  - pandas>=2.2,<3.0
+  - pyarrow>=9.0,<10.0
+  - numpy>=1.23,<2.0
+  - matplotlib>=3.8,<4.0
+  - pyyaml
+
+  # BLAST+ tools from bioconda
+  - blast>=2.16.0
+
+  # UNIX-only helper (e.g. libcurl)
+  - libcurl           # [linux|osx]
+
+#name: figure4_env
+#channels:
+#  - conda-forge
+#  - bioconda
+#  - defaults
+#dependencies:
+#  - python=3.10
+#  - pandas=2.2.0
+#  - numpy=1.23.5
+#  - matplotlib=3.8.3
+#  - pyyaml=6.0.1
+#  - blast=2.16.0
