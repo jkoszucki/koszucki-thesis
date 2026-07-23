@@ -5,13 +5,18 @@ prefix so both roots can share one deposited record.
 
 Excludes:
     both:       `.DS_Store` (anywhere)
-    input_dir:  `archive/`, `data-gwas/1_BACTERIA/`, `supplementary-thesis/thesis-manuscript/`
+    input_dir:  `archive/`, `data-gwas/1_BACTERIA/`, `data-gwas/3_GWAS/5_FIGURES/`,
+                `supplementary-thesis/thesis-manuscript/`
                 (large and/or not needed for the deposited record)
     output_dir: `other/prophage_blastp_db/` (regenerable BLASTP DB, not a result),
                 `other/alphafold3/1_DRAWN/` (regenerable pLDDT renders, superseded by
                 `2_DRAWN_AND_ORGANISED/`),
                 `other/zenodo/` (the archive's own output location — avoids nesting
                 a previous archive inside a new one)
+
+`data-gwas/3_GWAS/2_PYSEER/` (raw pyseer association output, ~26 GB) is excluded the
+same way, but kept as an empty directory entry in the archive so the folder structure
+stays self-documenting.
 
 Symlinks (e.g. other/alphafold3/2_DRAWN_AND_ORGANISED/*, which links into
 1_DRAWN/*) are always dereferenced — the real file content is embedded, never
@@ -37,7 +42,16 @@ from config import Config
 INPUT_EXCLUDED_DIRS = {
     Path("archive"),
     Path("data-gwas/1_BACTERIA"),
+    Path("data-gwas/3_GWAS/5_FIGURES"),
+    Path("data-gwas/3_GWAS/2_PYSEER"),
     Path("supplementary-thesis/thesis-manuscript"),
+}
+
+# Excluded dirs whose content is dropped but which should still appear in the
+# archive as an empty directory entry (relative to input_dir; written under
+# the "input/" arc prefix).
+INPUT_EMPTY_DIR_PLACEHOLDERS = {
+    Path("data-gwas/3_GWAS/2_PYSEER"),
 }
 
 OUTPUT_EXCLUDED_DIRS = {
@@ -75,10 +89,14 @@ def build_figshare_archive(input_dir: Path, output_dir: Path, out_path: Path, ar
     files = list(_iter_included_files(input_dir, INPUT_EXCLUDED_DIRS, "input"))
     files += list(_iter_included_files(output_dir, OUTPUT_EXCLUDED_DIRS, "output"))
 
+    empty_dirs = [Path("input") / d for d in sorted(INPUT_EMPTY_DIR_PLACEHOLDERS)]
+
     if archive_format == "zip":
         with zipfile.ZipFile(out_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for path, arcname in files:
                 zf.write(path, arcname=arcname)
+            for arc_dir in empty_dirs:
+                zf.writestr(f"{arc_dir}/", "")
     elif archive_format == "tar.gz":
         # dereference=True: embed the real file content for symlinks (e.g.
         # other/alphafold3/2_DRAWN_AND_ORGANISED/* → 1_DRAWN/*) instead of
@@ -87,6 +105,11 @@ def build_figshare_archive(input_dir: Path, output_dir: Path, out_path: Path, ar
         with tarfile.open(out_path, "w:gz", dereference=True) as tf:
             for path, arcname in files:
                 tf.add(path, arcname=arcname)
+            for arc_dir in empty_dirs:
+                tarinfo = tarfile.TarInfo(name=f"{arc_dir}/")
+                tarinfo.type = tarfile.DIRTYPE
+                tarinfo.mode = 0o755
+                tf.addfile(tarinfo)
     else:
         raise ValueError(f"Unsupported format: {archive_format}")
 
@@ -114,7 +137,8 @@ def main():
     print(
         f"Archiving {input_dir} + {output_dir} -> {out_path}\n"
         f"  excluding input:  {sorted(str(p) for p in INPUT_EXCLUDED_DIRS)}\n"
-        f"  excluding output: {sorted(str(p) for p in OUTPUT_EXCLUDED_DIRS)}"
+        f"  excluding output: {sorted(str(p) for p in OUTPUT_EXCLUDED_DIRS)}\n"
+        f"  kept as empty dirs: {sorted(str(p) for p in INPUT_EMPTY_DIR_PLACEHOLDERS)}"
     )
     build_figshare_archive(input_dir, output_dir, out_path, args.format)
 

@@ -5,12 +5,11 @@ proteins and capsular polysaccharide (CPS) diversity in *Klebsiella pneumoniae*.
 
 Covers three analysis threads:
 
-- **GWAS-predicted phage receptor-binding proteins (RBPs)** — depolymerases (SSRBH fold) and
-  putative deacetylases (SGNH fold), with experimental validation.
-- **SGNH hydrolase diversity and acetyltransferase detection** — sequence/structure comparison
-  (BLASTp, HHsearch, FoldSeek) of K-locus- and prophage-encoded acetyltransferases (SSLBH fold).
-- **CPS structural diversity and O-acetylation** — pairwise structural similarity across 81
-  resolved *Klebsiella* CPS repeating-unit structures, and their chemical modification patterns.
+- **GWAS-predicted phage receptor-binding proteins (RBPs)** — depolymerases and
+  putative deacetylases
+- **putative prophage deacetylases and K-locus acetyltrasferase diversity** — sequence and structure comparison
+- **capsule structural diversity and O-acetylation** — pairwise structural similarity across 81
+  NMR-resolved *Klebsiella* capsule repeating-unit structures along with their chemical modification.
 
 ## Repository structure
 
@@ -34,9 +33,6 @@ Covers three analysis threads:
     └── helpers/            ← shared Config/Style classes, structure rendering, AF3 indexing
 ```
 
-Raw input data and full analysis output (large intermediate tables, AlphaFold3 structures, etc.)
-live outside this repository and are not tracked here — only the code and the final figure
-plots/panels are.
 
 ## Pipeline
 
@@ -51,14 +47,12 @@ enzymes-proc             → rbp_deacetylases/ + cps_acetylases/  (literature ta
 helpers/build_af3_index.py → indexes every canonical protein set against its AlphaFold3 structure
 ```
 
-Each processing module is checkpointed — safe to rerun; only new or missing outputs are
-recomputed.
 
 | Chapter | Topic | Processing modules |
 |---------|-------|--------------------|
-| 2 | GWAS depolymerases (SSRBH) and putative deacetylases (SGNH); experimental validation | `gwas-proc` → `sgnh-proc` |
-| 3 | SGNH hydrolase diversity + acetyltransferase detection (SSLBH, HHsearch/FoldSeek) | `gwas-proc` + `sgnh-proc` + `acetyl-proc` |
-| 4 | CPS K-type diversity and O-acetylation | `cps-proc` |
+| 2 | GWAS depolymerases and putative deacetylases; experimental proteins | `gwas-proc` → `sgnh-proc` |
+| 3 | SGNH hydrolase diversity + acetyltransferase detection | `gwas-proc` + `sgnh-proc` + `acetyl-proc` |
+| 4 | Capsule structures diversity and acetylation | `cps-proc` |
 
 ## Environment setup
 
@@ -73,11 +67,28 @@ Structure rendering (PyMOL), K-locus extraction (Kaptive), and structural alignm
 each require their own separate environment — `pymol`, `kaptive`, and `tmtools` respectively —
 not included in `env.yaml`.
 
+### Data Availability
+
+1. Download the raw input data and supplementary material from Figshare: `https://figshare.com/s/abd6ae6a4af427f66a70`.
+2. Unpack it locally, then point `config/config.yml` at it:
+
+```yaml
+paths:
+  input_dir:  /path/to/downloaded/input
+  output_dir: /path/to/analysis/output
+  gwas_path:  /path/to/downloaded/input/data-gwas
+```
+
+`input_dir` is read-only throughout the pipeline; `output_dir` is written to by every processing
+module and may be empty on first run.
+
 ## Running
 
 All scripts run under the `jkoszucki` conda environment unless noted otherwise (PyMOL structure
 rendering requires the `pymol` environment; Kaptive requires `kaptive`; TM-align requires
 `tmtools`).
+
+
 
 ```bash
 # Full processing pipeline
@@ -95,26 +106,12 @@ conda run -n jkoszucki python scripts/figures/chapter4/main.py
 Each `main.py` has a run-flags block at the top (plain booleans) to toggle individual panels
 without touching `config.yml`.
 
-## Configuration
 
-`config/config.yml` holds all paths (input/output directories, GWAS data root) and shared plot
-style (fonts, DPI, ECOD topology colours). `Config` and `Style` (in `scripts/helpers/config.py`)
-are loaded once per script and passed down to every `lib/` module — nothing under `lib/` reads
-the config file directly.
+## AI Statement
 
-## Naming convention
-
-Figure artefacts are named from the manuscript figure number, prefixed with the chapter number
-(e.g. manuscript Figure 2.3 panel A → `figure2_3_panelA`):
-
-| Artefact | Pattern | Example |
-|----------|---------|---------|
-| lib script | `lib/figure{C}_{F}_panel{P}.py` | `lib/figure2_3_panelA.py` |
-| entry-point function | `plot_figure{C}_{F}_panel{P}` | `plot_figure2_3_panelA` |
-| plot output | `plots/figure{C}_{F}-panel{P}.png` / `.pdf` | `plots/figure2_3-panelA.png` |
+This codebase was written with the help of Claude Code (Anthropic).
 
 ## Citation
 
 This repository accompanies a PhD thesis building on Otwinowska, Koszucki et al. 2026, *PLOS
-Biology* ("Capsular specificity in temperate phages of *Klebsiella pneumoniae* is driven by
-diverse receptor-binding enzymes").
+Biology*.
