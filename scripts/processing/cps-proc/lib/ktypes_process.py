@@ -10,7 +10,7 @@ import pandas as pd
 
 from ktypes_base import BaseKTypeAPI
 
-ALLOWED = {"Glc", "GlcA", "Man", "Rha", "Fru", "Gal", "GalA", "Galf", "Sug"}
+ALLOWED = {"Glc", "GlcA", "Man", "Rha", "Fuc", "Gal", "GalA", "Galf", "Sug"}
 ANCHOR_POS_RE = re.compile(r"@P(\d+)")
 
 

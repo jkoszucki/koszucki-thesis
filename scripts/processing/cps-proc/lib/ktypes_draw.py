@@ -14,7 +14,7 @@ from matplotlib.patches import Circle, RegularPolygon
 
 
 FIG_SIZE = (12, 8)
-ALLOWED_BRANCH_MONOS = {"Glc", "GlcA", "Man", "Rha", "Fru", "Gal", "GalA", "Galf", "Sug"}
+ALLOWED_BRANCH_MONOS = {"Glc", "GlcA", "Man", "Rha", "Fuc", "Gal", "GalA", "Galf", "Sug"}
 _ANCHOR_TOKEN_RE = re.compile(r"^P(\d+)", re.IGNORECASE)
 
 BRANCH_EDGE_LENGTH = 1.0
@@ -559,7 +559,7 @@ def draw_node(ax, x, y, mono, label_position="above"):
     elif mono == "Rha":
         tri = RegularPolygon((x, y), numVertices=3, radius=R_TRI, facecolor="#3cb371", edgecolor="black", linewidth=LW_OUT)
         ax.add_patch(tri)
-    elif mono == "Fru":
+    elif mono == "Fuc":
         tri = RegularPolygon((x, y), numVertices=3, radius=R_TRI, facecolor="#ff6b6b", edgecolor="black", linewidth=LW_OUT)
         ax.add_patch(tri)
     elif mono == "Gal":

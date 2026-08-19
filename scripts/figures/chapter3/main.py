@@ -1,11 +1,12 @@
 """
-figures/chapter3 — Chapter 3 plots: SGNH hydrolase deacetylases + acetyltransferases.
+figures/chapter3 — Chapter 3 plots: CPS K-type diversity and O-acetylation.
 
 Reads from:
-  - output_dir/processing/sgnh-hydrolases/
-  - output_dir/enzymes/
+  - output_dir/cps_structures/  (built by processing/cps-proc/main.py — run that first)
 Writes plots to scripts/figures/chapter3/plots/.
 """
+
+from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -14,91 +15,133 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "helpers"))
 
 from config import Config
-from figure3_1_panelA import plot_figure3_1_panelA
-from figure3_1_panelB import plot_figure3_1_panelB
+from figure3_1 import KTypePlotAPI
+from figure3_1_panelC import plot_figure3_1_panelC
 from figure3_2_panelA import plot_figure3_2_panelA
 from figure3_2_panelB import plot_figure3_2_panelB
+from figure3_2_panelC import plot_figure3_2_panelC
 
 cfg = Config()
 
-plots_dir       = Path(__file__).resolve().parent / "plots"
-sgnh_dir        = cfg.output_dir / "processing" / "sgnh-hydrolases"
-enzymes_xlsx    = cfg.input_dir / "supplementary-thesis" / "supplementary-tables" / "S1_Table.xlsx"
-pyseer_hits_tsv = cfg.gwas_path / "3_GWAS" / "3_PROCESSING" / "pyseer_hits_filtered.tsv"
+analysis_output_dir = cfg.output_dir / "cps_structures"
+plots_dir            = Path(__file__).resolve().parent / "plots"
 
 # ---------------------------------------------------------------------------
-# Run flags
+# Run flags — toggle steps without modifying config.yml
 # ---------------------------------------------------------------------------
-PLOT_FIGURE3_1_PANELA = True   # SGNH predictor recall dot plot (12 K-loci, precision >= 0.50)
-PLOT_FIGURE3_1_PANELB = True   # SGNH similarity network: 12 predictions + 4 experimental (Cytoscape)
-PLOT_FIGURE3_2_PANELA = True   # GWAS prediction + O-acetylation overview table (35 K-loci)
-PLOT_FIGURE3_2_PANELB = True   # Acetyltransferase SSN (69 K-locus + 3 experimental + 2 GWAS best)
+PLOT_FIGURE3_1_PANELA = True   # cumulative NMR structures over time
+PLOT_FIGURE3_1_PANELC = True   # modification frequency grid
+PLOT_FIGURE3_1_PANELD = True   # OAc/OPy distribution per monosaccharide
+PLOT_FIGURE3_2_PANELA = True   # J_core vs J_branch scatter
+PLOT_FIGURE3_2_PANELB = True   # CPS structural similarity network (Cytoscape)
+PLOT_FIGURE3_2_PANELC = True   # summary table of structurally related CPS pairs
 
 # ---------------------------------------------------------------------------
-# Figure 3.1A — SGNH predictor recall dot plot
+# Read prepared tables — built by processing/cps-proc/main.py, not here
+# ---------------------------------------------------------------------------
+plots_dir.mkdir(parents=True, exist_ok=True)
+
+processed_csv     = analysis_output_dir / "ktypes.csv"
+similarity_csv    = analysis_output_dir / "ktypes_sim.csv"
+modifications_csv = analysis_output_dir / "ktypes_modifications.csv"
+
+for csv_path in (processed_csv, similarity_csv, modifications_csv):
+    if not csv_path.exists():
+        raise FileNotFoundError(
+            f"{csv_path} not found — run `conda run -n jkoszucki python "
+            "scripts/processing/cps-proc/main.py` first to build the CPS tables."
+        )
+
+# ---------------------------------------------------------------------------
+# Figure 3.1A — cumulative NMR structures over time
 # ---------------------------------------------------------------------------
 if PLOT_FIGURE3_1_PANELA:
-    print("\nFigure 3.1A: SGNH predictor recall dot plot …")
-    plot_figure3_1_panelA(
-        gwas_sgnh_best_tsv  = sgnh_dir / "gwas_sgnh_best.tsv",
-        best_predictors_tsv = cfg.output_dir / "rbp_best_predictors" / "best_predictors_gwas.tsv",
-        pyseer_hits_tsv     = pyseer_hits_tsv,
-        plots_dir           = plots_dir,
-        style               = cfg.style,
+    print("\nFigure 3.1A: cumulative CPS structures over time …")
+    plot_api = KTypePlotAPI(
+        ktypes_csv=processed_csv,
+        modifications_csv=modifications_csv,
+        style=cfg.style,
     )
+    for ext in ("png", "pdf"):
+        plot_api.plot_cumulative_structures(
+            output_path=plots_dir / f"figure3_1-panelA.{ext}",
+            show=False,
+        )
 else:
     print("[skip] Figure 3.1A")
 
 # ---------------------------------------------------------------------------
-# Figure 3.1B — SGNH similarity network (Cytoscape)
+# Figure 3.1C — count + mean frequency grid for four modification types
 # ---------------------------------------------------------------------------
-if PLOT_FIGURE3_1_PANELB:
-    print("\nFigure 3.1B: SGNH similarity network (Cytoscape) …")
-    plot_figure3_1_panelB(
-        gwas_sgnh_best_tsv = sgnh_dir / "gwas_sgnh_best.tsv",
-        enzymes_xlsx       = enzymes_xlsx,
-        plots_dir          = plots_dir,
-        style              = cfg.style,
-    )
+if PLOT_FIGURE3_1_PANELC:
+    print("\nFigure 3.1C: modification frequency grid …")
+    for ext in ("png", "pdf"):
+        plot_figure3_1_panelC(
+            modifications_csv=modifications_csv,
+            output_path=plots_dir / f"figure3_1-panelC.{ext}",
+            style=cfg.style,
+        )
 else:
-    print("[skip] Figure 3.1B")
+    print("[skip] Figure 3.1C")
 
 # ---------------------------------------------------------------------------
-# Figure 3.2X — GWAS prediction + O-acetylation overview table
+# Figure 3.1D — OAc/OPy distribution per monosaccharide
+# ---------------------------------------------------------------------------
+if PLOT_FIGURE3_1_PANELD:
+    print("\nFigure 3.1D: OAc/OPy distribution per monosaccharide …")
+    plot_api = KTypePlotAPI(
+        ktypes_csv=processed_csv,
+        modifications_csv=modifications_csv,
+        style=cfg.style,
+    )
+    for ext in ("png", "pdf"):
+        plot_api.plot_modification_and_monosaccharide_distribution(
+            output_path=plots_dir / f"figure3_1-panelD.{ext}",
+            show=False,
+        )
+else:
+    print("[skip] Figure 3.1D")
+
+# ---------------------------------------------------------------------------
+# Figure 3.2A — J_core vs J_branch scatter (all K-type pairs)
 # ---------------------------------------------------------------------------
 if PLOT_FIGURE3_2_PANELA:
-    print("\nFigure 3.2A: GWAS prediction + O-acetylation overview table …")
-    plot_figure3_2_panelA(
-        best_predictors_tsv    = cfg.output_dir / "rbp_best_predictors" / "best_predictors_gwas.tsv",
-        depolymerases_gwas_tsv = cfg.output_dir / "rbp_depolymerases"  / "depolymerases_gwas.tsv",
-        deacetylases_gwas_tsv  = cfg.output_dir / "rbp_deacetylases"   / "deacetylases_gwas.tsv",
-        acetylases_gwas_tsv    = cfg.output_dir / "cps_acetylases"     / "acetylases_gwas.tsv",
-        acetylases_kloci_tsv   = cfg.output_dir / "cps_acetylases"     / "acetylases_kloci.tsv",
-        cps_xlsx               = cfg.input_dir  / "supplementary-thesis" / "supplementary-tables" / "S2_Table.xlsx",
-        pyseer_hits_tsv        = pyseer_hits_tsv,
-        plots_dir              = plots_dir,
-        style                  = cfg.style,
-    )
+    print("\nFigure 3.2A: J_core vs J_branch scatter …")
+    for ext in ("png", "pdf"):
+        plot_figure3_2_panelA(
+            similarity_csv=similarity_csv,
+            output_path=plots_dir / f"figure3_2-panelA.{ext}",
+            style=cfg.style,
+        )
 else:
     print("[skip] Figure 3.2A")
 
 # ---------------------------------------------------------------------------
-# Figure 3.2B — Acetyltransferase similarity network (Cytoscape)
+# Figure 3.2B — CPS structural similarity network (Cytoscape)
 # ---------------------------------------------------------------------------
 if PLOT_FIGURE3_2_PANELB:
-    print("\nFigure 3.2B: Acetyltransferase similarity network (Cytoscape) …")
-    _no_ecod_dir = cfg.output_dir / "processing" / "gwas-data" / "no-ecod-reported-topology"
+    print("\nFigure 3.2B: CPS similarity network (Cytoscape) …")
     plot_figure3_2_panelB(
-        acetylases_kloci_tsv      = cfg.output_dir / "cps_acetylases" / "acetylases_kloci.tsv",
-        acetylases_literature_tsv = cfg.output_dir / "cps_acetylases" / "acetylases_literature_active.tsv",
-        gwas_best_at_fastas       = {
-            "KL30":  _no_ecod_dir / "KL30"  / "PCI80C80" / "PC0675" / "protein" / "sequence.fasta",
-            "KL111": _no_ecod_dir / "KL111" / "PCI80C80" / "PC0915" / "protein" / "sequence.fasta",
-        },
-        plots_dir = plots_dir,
-        style     = cfg.style,
+        similarity_csv=similarity_csv,
+        ktypes_csv=processed_csv,
+        modifications_csv=modifications_csv,
+        output_dir=plots_dir / "figure3_2-panelB",
+        style=cfg.style,
     )
 else:
     print("[skip] Figure 3.2B")
+
+# ---------------------------------------------------------------------------
+# Figure 3.2C — summary table of structurally related CPS pairs
+# ---------------------------------------------------------------------------
+if PLOT_FIGURE3_2_PANELC:
+    print("\nFigure 3.2C: CPS pairs summary table …")
+    for ext in ("png", "pdf"):
+        plot_figure3_2_panelC(
+            output_path=plots_dir / f"figure3_2-panelC.{ext}",
+            style=cfg.style,
+        )
+else:
+    print("[skip] Figure 3.2C")
 
 print("\nDone.")

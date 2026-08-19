@@ -1,0 +1,84 @@
+source	target	path_jaccard_core	path_jaccard_branch	path_jaccard_total	interaction
+CPS2_K2	CPS13_K13	1.0	0.444	0.688	sim_core
+CPS2_K2	CPS78_K2	1.0	1.0	1.0	sim_total
+CPS3_K3	CPS56_K57	0.139	1.0	0.184	sim_branch
+CPS7_K7	CPS10_K10	0.062	1.0	0.1	sim_branch
+CPS7_K7	CPS60_K61	0.117	1.0	0.159	sim_branch
+CPS8_K8	CPS58_K59	0.087	1.0	0.143	sim_branch
+CPS8_K8	CPS76_K82	0.233	1.0	0.303	sim_branch
+CPS8_K8	CPS79_K8	0.233	0.8	0.294	sim_branch
+CPS8_K8	CPS80_UNK	0.233	1.0	0.303	sim_branch
+CPS10_K10	CPS60_K61	0.077	1.0	0.123	sim_branch
+CPS13_K13	CPS72_K74	0.05	1.0	0.333	sim_branch
+CPS13_K13	CPS78_K2	1.0	0.444	0.688	sim_core
+CPS14_K14	CPS63_K64	0.1	0.714	0.145	sim_branch
+CPS16_K16	CPS57_K58	1.0	0.143	0.8	sim_core
+CPS21_K21a	CPS22_K21b	0.083	1.0	0.12	sim_branch
+CPS23_K22	CPS26_K25	1.0	0.2	0.368	sim_core
+CPS23_K22	CPS38_K37	1.0	1.0	1.0	sim_total
+CPS23_K22	CPS51_K51	0.143	1.0	0.643	sim_branch
+CPS23_K22	CPS81_K41	1.0	0.409	0.5	sim_core
+CPS26_K25	CPS38_K37	1.0	0.2	0.368	sim_core
+CPS26_K25	CPS81_K41	1.0	0.107	0.219	sim_core
+CPS28_K27a	CPS29_K27b	0.171	1.0	0.261	sim_branch
+CPS31_K30	CPS34_K33	1.0	1.0	1.0	sim_total
+CPS31_K30	CPS67_K69	1.0	1.0	1.0	sim_total
+CPS34_K33	CPS67_K69	1.0	1.0	1.0	sim_total
+CPS38_K37	CPS51_K51	0.143	1.0	0.643	sim_branch
+CPS38_K37	CPS81_K41	1.0	0.409	0.5	sim_core
+CPS47_K47	CPS77_K83	1.0	0.133	0.412	sim_core
+CPS58_K59	CPS76_K82	0.114	1.0	0.184	sim_branch
+CPS58_K59	CPS79_K8	0.114	0.8	0.179	sim_branch
+CPS58_K59	CPS80_UNK	0.114	1.0	0.184	sim_branch
+CPS72_K74	CPS74_K80	1.0	0.286	0.64	sim_core
+CPS76_K82	CPS79_K8	1.0	0.8	0.941	sim_total
+CPS76_K82	CPS80_UNK	1.0	1.0	1.0	sim_total
+CPS79_K8	CPS80_UNK	1.0	0.8	0.941	sim_total
+CPS1_K1	CPS1_K1				singleton
+CPS4_K4	CPS4_K4				singleton
+CPS5_K5	CPS5_K5				singleton
+CPS6_K6	CPS6_K6				singleton
+CPS9_K9	CPS9_K9				singleton
+CPS11_K11	CPS11_K11				singleton
+CPS12_K12	CPS12_K12				singleton
+CPS15_K15	CPS15_K15				singleton
+CPS17_K17	CPS17_K17				singleton
+CPS18_K18	CPS18_K18				singleton
+CPS19_K19	CPS19_K19				singleton
+CPS20_K20	CPS20_K20				singleton
+CPS24_K23	CPS24_K23				singleton
+CPS25_K24	CPS25_K24				singleton
+CPS27_K26	CPS27_K26				singleton
+CPS30_K28	CPS30_K28				singleton
+CPS32_K31	CPS32_K31				singleton
+CPS33_K32	CPS33_K32				singleton
+CPS35_K34	CPS35_K34				singleton
+CPS36_K35	CPS36_K35				singleton
+CPS37_K36	CPS37_K36				singleton
+CPS39_K38	CPS39_K38				singleton
+CPS40_K39	CPS40_K39				singleton
+CPS41_K40	CPS41_K40				singleton
+CPS42_K41	CPS42_K41				singleton
+CPS43_K43	CPS43_K43				singleton
+CPS44_K44	CPS44_K44				singleton
+CPS45_K45	CPS45_K45				singleton
+CPS46_K46	CPS46_K46				singleton
+CPS48_K48	CPS48_K48				singleton
+CPS49_K49	CPS49_K49				singleton
+CPS50_K50	CPS50_K50				singleton
+CPS52_K53	CPS52_K53				singleton
+CPS53_K54	CPS53_K54				singleton
+CPS54_K55	CPS54_K55				singleton
+CPS55_K56	CPS55_K56				singleton
+CPS59_K60	CPS59_K60				singleton
+CPS61_K62	CPS61_K62				singleton
+CPS62_K63	CPS62_K63				singleton
+CPS64_K66	CPS64_K66				singleton
+CPS65_K67	CPS65_K67				singleton
+CPS66_K68	CPS66_K68				singleton
+CPS68_K70	CPS68_K70				singleton
+CPS69_K71	CPS69_K71				singleton
+CPS70_K72	CPS70_K72				singleton
+CPS71_K73	CPS71_K73				singleton
+CPS73_K79	CPS73_K79				singleton
+CPS75_K81	CPS75_K81				singleton

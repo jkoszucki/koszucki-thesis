@@ -20,18 +20,18 @@ SAMPLE_DIR = Path(__file__).resolve().parent / "sample"
 def main() -> None:
     cfg = Config()
     input_xlsx = cfg.input_dir / "supplementary-thesis" / "supplementary-tables" / "S2_Table.xlsx"
-    chapter4_dir = cfg.output_dir / "cps_structures"
+    chapter3_dir = cfg.output_dir / "cps_structures"
 
     ### BUILD TABLES
-    tables_api = KTypeTablesAPI(input_xlsx=input_xlsx, output_dir=chapter4_dir)
+    tables_api = KTypeTablesAPI(input_xlsx=input_xlsx, output_dir=chapter3_dir)
     processed_df = tables_api.build_processed_table()
     processed_csv = tables_api.export_processed_table(processed_df)
 
-    modifications_api = KTypeModificationsAPI(input_xlsx=input_xlsx, output_dir=chapter4_dir)
+    modifications_api = KTypeModificationsAPI(input_xlsx=input_xlsx, output_dir=chapter3_dir)
     modifications_df = modifications_api.build_modifications_table()
     modifications_csv = modifications_api.export_modifications_table(modifications_df)
 
-    similarity_api = KTypeSimilarityAPI(input_xlsx=input_xlsx, output_dir=chapter4_dir)
+    similarity_api = KTypeSimilarityAPI(input_xlsx=input_xlsx, output_dir=chapter3_dir)
     similarity_df = similarity_api.build_similarity_table(processed_df)
     similarity_api.export_similarity_table(df=similarity_df)
 

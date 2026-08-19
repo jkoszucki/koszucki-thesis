@@ -17,7 +17,7 @@ pipeline is other/alphafold3/ (see scripts/helpers/build_af3_index.py).
 
 Output root: cfg.output_dir / "processing" / "gwas-data"
 Feeds figures/chapter2/ (sgnh-ecod entries, via sgnh-proc symlinks)
-and  figures/chapter3/ (no-ecod, ssrbh-ecod entries).
+and  figures/chapter4/ (no-ecod, ssrbh-ecod entries).
 """
 
 import sys
