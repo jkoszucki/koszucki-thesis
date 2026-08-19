@@ -22,6 +22,8 @@ from pathlib import Path
 import pandas as pd
 import re
 
+from enzymes_table import load_enzymes_table
+
 
 def _ktype_to_klocus(ktype: str) -> str:
     """'K2' → 'KL2', 'K57' → 'KL57'."""
@@ -87,9 +89,15 @@ def build_acetylases_kloci(
     # ------------------------------------------------------------------
     # 3. source_experimental flag — from S1_Table.xlsx enzymes sheet
     # ------------------------------------------------------------------
-    exp_df = pd.read_excel(enzymes_xlsx, sheet_name="enzymes")
-    # Only acetylation enzymes (not deacetylases) set source_experimental
-    acetyl_exp_df = exp_df[exp_df["modification"].str.lower() == "acetylation"]
+    exp_df = load_enzymes_table(enzymes_xlsx, verbose=False)
+    # Only acetylation enzymes (not deacetylases) set source_experimental, and only
+    # those with experimental evidence: S1_Table also carries GWAS-predicted
+    # acetyltransferases (`_GWAS_AC_`, e.g. PROTEIN04_GWAS_AC_K30), which are
+    # predictions and must not mark their K-locus as experimentally characterised.
+    acetyl_exp_df = exp_df[
+        (exp_df["modification"].str.lower() == "acetylation")
+        & (exp_df["proteinid"].str.contains("_MOD_AC_", na=False))
+    ]
     # Derive K-locus prefix (e.g. "K2" → "KL2") from the ktype column
     exp_kloci = set()
     for ktype in acetyl_exp_df["ktype"].dropna():

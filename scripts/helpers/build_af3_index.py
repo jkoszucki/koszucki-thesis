@@ -41,6 +41,8 @@ from pathlib import Path
 import pandas as pd
 from Bio import SeqIO
 
+from enzymes_table import load_enzymes_table
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from config import Config
 
@@ -59,7 +61,8 @@ DEPOL_DIR         = cfg.output_dir / "rbp_depolymerases"
 DEACETYL_DIR      = cfg.output_dir / "rbp_deacetylases"
 ACETYL_DIR        = cfg.output_dir / "cps_acetylases"
 BESTPRED_DIR      = cfg.output_dir / "rbp_best_predictors"
-MMSEQS            = cfg.input_dir / "gwas" / "3_GWAS" / "1_INTERMEDIATE" / "2_MMSEQS"
+MMSEQS            = cfg.gwas_path / "3_GWAS" / "1_INTERMEDIATE" / "2_MMSEQS"
+ENZYMES_XLSX      = cfg.input_dir / "supplementary-thesis" / "supplementary-tables" / "S1_Table.xlsx"
 NTERMINAL_RBP_DIR = cfg.output_dir / "other" / "n-terminal" / "prophages_rbps"
 
 NTERMINAL_ANCHOR_COLOR = "#9d5a16"   # N-terminal anchor (residues 1-160)
@@ -157,8 +160,17 @@ def _load_gwas_pc_set(
     exclude_all: bool = False,
     af3_count: int = 3,
     seq_col: str | None = None,
+    canonical_suffix: str = "",
 ) -> list[dict]:
-    """Load a GWAS PC-based table (best_predictors, deacetylases_gwas, acetylases_gwas)."""
+    """Load a GWAS PC-based table (best_predictors, deacetylases_gwas, acetylases_gwas).
+
+    `canonical_suffix` disambiguates a PC that is modelled twice at different oligomeric
+    states. PC0675/KL30 and PC0915/KL111 are each both a best GWAS predictor (modelled as
+    a homotrimer, like every other RBP predictor) and a GWAS acetyltransferase (modelled
+    as a monomer, like every other acetyltransferase). Canonical names are `{PC}_{locus}`,
+    so without a suffix the acetyltransferase entry for KL30 would resolve to the
+    predictor's trimer CIF and the two would be silently conflated.
+    """
     path = src_dir / fname
     if not path.exists():
         print(f"  [warn] missing: {path}")
@@ -189,8 +201,47 @@ def _load_gwas_pc_set(
             "seq":            seq,
             "af3_count":      af3_count,
             "excluded":       exclude_all,
-            "canonical_hint": f"{pc}_{locus}",
+            "canonical_hint": f"{pc}_{locus}{canonical_suffix}",
             "cl":             cl,
+        })
+    return rows
+
+
+def _load_s1_table_set(
+    enzymes_xlsx: Path,
+    assigned_set: str,
+    infix: str,
+    af3_count: int = 1,
+) -> list[dict]:
+    """Load PROTEIN0X rows straight from S1_Table by proteinid infix.
+
+    enzymes-proc splits S1_Table into the literature TSVs by `_MOD_AC_` / `_DAC_`, so rows
+    with any other infix reach no output table and would be invisible to this index. The
+    GWAS-predicted acetyltransferases (`_GWAS_AC_`) are exactly that case: real proteins
+    with real AF3 models that belong in the render tree, but no literature table to load
+    them from.
+    """
+    if not enzymes_xlsx.exists():
+        print(f"  [warn] missing: {enzymes_xlsx}")
+        return []
+    df = load_enzymes_table(enzymes_xlsx, verbose=False)
+    rows = []
+    for _, row in df.iterrows():
+        pid = str(row["proteinid"]).strip()
+        if infix.lower() not in pid.lower():
+            continue
+        seq = str(row.get("sequence", "")).strip()
+        kl  = str(row.get("ktype", "-")).strip()
+        rows.append({
+            "protein_id":     pid,
+            "assigned_set":   assigned_set,
+            "kl":             kl if kl and kl != "nan" else "-",
+            "ecod_type":      None,
+            "seq":            seq if seq and seq != "nan" else None,
+            "af3_count":      af3_count,
+            "excluded":       False,
+            "canonical_hint": pid.lower(),
+            "cl":             "",
         })
     return rows
 
@@ -336,8 +387,17 @@ def main() -> None:
 
     # Acetyltransferases (SSLBH → monomers)
     all_entries += _load_literature_set("acetylases_literature_active.tsv",  "acetylases_literature_active",  ACETYL_DIR, af3_count=1)
+    # GWAS-predicted acetyltransferases (KL30, KL111) — monomers, straight from S1_Table:
+    # enzymes-proc keeps `_GWAS_AC_` rows out of the literature tables, so without this
+    # they have AF3 models but no place in the index or the organised render tree.
+    all_entries += _load_s1_table_set(ENZYMES_XLSX, "acetylases_gwas_putative", "_GWAS_AC_", af3_count=1)
     all_entries += _load_kloci_set("acetylases_kloci.tsv",   "acetylases_kloci",  exclude_all=False)
-    all_entries += _load_gwas_pc_set("acetylases_gwas.tsv",  "acetylases_gwas",  ACETYL_DIR, exclude_all=True, af3_count=1)
+    # acetylases_gwas is excluded — indexed for completeness, no AF3 models requested.
+    # The `_monomer` suffix is kept so the set stays correct if it is ever re-enabled:
+    # PC0675/KL30 and PC0915/KL111 are also best_predictors_gwas entries, modelled as
+    # homotrimers under `{PC}_{locus}`, and would otherwise claim those trimer CIFs.
+    all_entries += _load_gwas_pc_set("acetylases_gwas.tsv",  "acetylases_gwas",  ACETYL_DIR,
+                                     exclude_all=True, af3_count=1, canonical_suffix="_monomer")
 
     # N-terminal anchor RBPs (homotrimers; domain-colored on render)
     all_entries += _load_nterminal_set()

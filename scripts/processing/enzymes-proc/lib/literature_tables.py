@@ -1,5 +1,5 @@
 """
-Build literature tables from enzymes.xlsx.
+Build literature tables from S1_Table.xlsx.
 
 Outputs
 -------
@@ -8,7 +8,8 @@ cps_acetylases/acetylases_literature_active.tsv n=3  — proteins with _MOD_AC_ 
 """
 
 from pathlib import Path
-import pandas as pd
+
+from enzymes_table import load_enzymes_table
 
 
 def build_literature_tables(
@@ -16,7 +17,7 @@ def build_literature_tables(
     rbp_deacetylases_dir: Path,
     cps_acetylases_dir: Path,
 ) -> None:
-    df = pd.read_excel(enzymes_xlsx, sheet_name="enzymes", engine="openpyxl")
+    df = load_enzymes_table(enzymes_xlsx)
 
     rbp_deacetylases_dir.mkdir(parents=True, exist_ok=True)
     cps_acetylases_dir.mkdir(parents=True, exist_ok=True)

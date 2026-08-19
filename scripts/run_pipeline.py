@@ -6,9 +6,9 @@ Run the full processing workflow, in dependency order, ending with the AF3 index
   3. processing/enzymes-proc/main.py
   4. processing/acetyl-proc/main.py
   5. processing/cps-proc/main.py
-  6. helpers/build_af3_index.py   ← integral last step: rebuilds summary.tsv, 2_BEST_MODELS
-                                     symlinks, missing/ batches, 4_ORGANISED symlinks, and
-                                     renders any not-yet-rendered nterminal structures (pymol env)
+  6. helpers/build_af3_index.py   ← integral last step: rebuilds summary.tsv, UPLOAD/ batches,
+                                     2_DRAWN_AND_ORGANISED symlinks, and renders any
+                                     not-yet-rendered nterminal structures (pymol env)
 
 Each step is run as a subprocess in the current interpreter (run this script itself under
 the jkoszucki conda env). A step's failure stops the run — later steps assume earlier

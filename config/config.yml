@@ -10,7 +10,7 @@ af3_set_colors:
   depolymerases_gwas_active:             "#1a7a1a"
   deacetylases_literature:               "#a07000"  # vivid amber  (active SGNH deacetylases)
   deacetylases_gwas:                     "#a07000"
-  acetylases_literature_active:          "#0a4d8c"  # vivid blue   (active SSLBH acetylases)
+  acetylases_literature_active:          "#b2182b"  # red — matches the active_AT_ label colour in figure 3.2B
   # Predicted / not validated — very pale to maximise contrast with active
   depolymerases_gwas:                    "#b7e4b7"  # pale green
   depolymerases_manualsearch_inactive:   "#e0e0e0"  # near-white gray

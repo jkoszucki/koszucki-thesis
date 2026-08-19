@@ -6,7 +6,7 @@ Pipeline:
                                   cps_acetylases/acetylases_literature_active.tsv
 
 Both tables already carry a `sequence` column, and the corresponding AF3
-structures live under other/alphafold3/2_BEST_MODELS/ (built + maintained by
+structures are indexed under other/alphafold3/ (built + maintained by
 scripts/helpers/build_af3_index.py) — so there is no separate per-protein
 output tree here any more. The former enzymes/{proteinID}/ tree (sequence.fasta,
 structure.cif symlink, against-prophages/raw_blast.tsv) duplicated data already
@@ -30,9 +30,9 @@ cfg = Config()
 enzymes_xlsx = cfg.input_dir / "supplementary-thesis" / "supplementary-tables" / "S1_Table.xlsx"
 
 # ---------------------------------------------------------------------------
-# Step 1 — literature tables from enzymes.xlsx
+# Step 1 — literature tables from S1_Table.xlsx
 # ---------------------------------------------------------------------------
-print("Step 1: Building literature tables from enzymes.xlsx …")
+print("Step 1: Building literature tables from S1_Table.xlsx …")
 build_literature_tables(
     enzymes_xlsx         = enzymes_xlsx,
     rbp_deacetylases_dir = cfg.output_dir / "rbp_deacetylases",

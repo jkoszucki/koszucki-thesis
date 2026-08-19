@@ -4,7 +4,8 @@ Archive layout: everything is nested under an `input/` or `output/` top-level
 prefix so both roots can share one deposited record.
 
 Excludes:
-    both:       `.DS_Store` (anywhere)
+    both:       `.DS_Store` (anywhere), Office lock/temp files (`~$*`, e.g.
+                `~$S1_Table.xlsx`)
     input_dir:  `archive/`, `data-gwas/1_BACTERIA/`, `data-gwas/3_GWAS/5_FIGURES/`,
                 `supplementary-thesis/thesis-manuscript/`
                 (large and/or not needed for the deposited record)
@@ -33,7 +34,6 @@ import argparse
 import sys
 import tarfile
 import zipfile
-from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -62,9 +62,14 @@ OUTPUT_EXCLUDED_DIRS = {
 
 EXCLUDED_FILENAMES = {".DS_Store"}
 
+# Office lock/temp files, e.g. `~$S1_Table.xlsx`.
+EXCLUDED_FILENAME_PREFIXES = ("~$",)
+
 
 def _is_excluded(relative_path: Path, excluded_dirs: set[Path]) -> bool:
     if relative_path.name in EXCLUDED_FILENAMES:
+        return True
+    if relative_path.name.startswith(EXCLUDED_FILENAME_PREFIXES):
         return True
     return any(
         relative_path == excluded or excluded in relative_path.parents
@@ -130,7 +135,7 @@ def main():
         out_path = args.out
     else:
         extension = "zip" if args.format == "zip" else "tar.gz"
-        out_path = cfg.output_dir / "other" / "zenodo" / f"submission_archive_{date.today():%Y-%m-%d}.{extension}"
+        out_path = Path.home() / "Downloads" / f"koszucki-thesis.{extension}"
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
 

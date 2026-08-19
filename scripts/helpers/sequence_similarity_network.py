@@ -62,6 +62,22 @@ _BIN_LABEL_PRESETS = {
     3: ["low", "medium", "high"],
 }
 
+# BLAST mangles sequence IDs: it truncates at the first whitespace and treats
+# '.' and '|' as field separators. Round-trip these through placeholders so
+# arbitrary node names survive makeblastdb/blastp intact.
+_ID_SUBSTITUTIONS = [
+    (".", "_DOT_"),
+    ("|", "_PIPE_"),
+    (" ", "_SPC_"),
+    ("\t", "_TAB_"),
+]
+
+
+def _sanitize_id(name: str) -> str:
+    for char, placeholder in _ID_SUBSTITUTIONS:
+        name = name.replace(char, placeholder)
+    return name
+
 
 # ---------------------------------------------------------------------------
 # SequenceSimilarityNetwork
@@ -85,6 +101,11 @@ class SequenceSimilarityNetwork:
         extends to 100%. Labels are auto-assigned: 2 bins → low/high,
         3 bins → low/medium/high, 4+ → bin1/bin2/…
         Default: [30, 50, 80].
+    identity_intervals : list[int] | None
+        Optional % identity bin boundaries, binned exactly like
+        coverage_intervals but on `pident`. When set, edges gain an
+        `identity_interval` column — useful for styling edge weight by
+        identity as well as by coverage. Default: None (column omitted).
     include_singletons : bool
         If True, nodes with no edges are added as self-loop rows so that
         Cytoscape displays them as isolated nodes. Default: True.
@@ -96,12 +117,14 @@ class SequenceSimilarityNetwork:
         min_cov:            float      = 0.30,
         max_evalue:         float      = 1e-3,
         coverage_intervals: list[int]  = None,
+        identity_intervals: list[int]  = None,
         include_singletons: bool       = True,
     ) -> None:
         self.min_pident         = min_pident
         self.min_cov            = min_cov
         self.max_evalue         = max_evalue
         self.coverage_intervals = list(coverage_intervals) if coverage_intervals else _DEFAULT_INTERVALS
+        self.identity_intervals = list(identity_intervals) if identity_intervals else None
         self.include_singletons = include_singletons
 
     # ------------------------------------------------------------------
@@ -122,7 +145,10 @@ class SequenceSimilarityNetwork:
         Args:
             sequences:   FASTA path or dict {seq_id: sequence}.
             output_dir:  destination for edge.tsv and node.tsv.
-            tmp_dir:     scratch directory for BLAST intermediates.
+            tmp_dir:     directory for BLAST intermediates. Nothing is cleaned
+                         up, so the raw unfiltered hit table persists at
+                         tmp_dir/blastp_raw.tsv alongside sequences.fasta and
+                         the BLAST DB — pass a durable path to keep them.
             node_attrs:  optional DataFrame with extra per-node columns.
                          Merged onto the node table by node_id_col.
             node_id_col: column in node_attrs that matches the sequence IDs.
@@ -180,8 +206,13 @@ class SequenceSimilarityNetwork:
                 node_attrs, left_on="name", right_on=node_id_col, how="left"
             )
 
-        # Sanitize IDs for BLAST (dots truncate query IDs)
-        nodes["blast_id"] = nodes["name"].str.replace(".", "_DOT_", regex=False)
+        nodes["blast_id"] = nodes["name"].map(_sanitize_id)
+        if nodes["blast_id"].duplicated().any():
+            dupes = sorted(nodes.loc[nodes["blast_id"].duplicated(), "name"])
+            raise ValueError(
+                f"Node names collide after BLAST ID sanitisation: {dupes}. "
+                "Rename them — BLAST cannot distinguish the sequences otherwise."
+            )
         return nodes
 
     # ------------------------------------------------------------------
@@ -206,19 +237,31 @@ class SequenceSimilarityNetwork:
              "-query", str(fasta_path), "-db", str(fasta_path),
              "-out",   str(blast_out),
              "-outfmt", "6 qseqid sseqid evalue pident bitscore "
+                        "nident length mismatch gapopen gaps "
                         "qlen qstart qend slen sstart send"],
             check=True, capture_output=True,
         )
 
         cols = ["source", "target", "evalue", "pident", "bitscore",
+                "nident", "length", "mismatch", "gapopen", "gaps",
                 "qlen", "qstart", "qend", "slen", "sstart", "send"]
         df = pd.read_csv(blast_out, sep="\t", header=None, names=cols)
 
+        # Map BLAST IDs back to node names. An unmapped ID means BLAST altered
+        # the ID in a way _sanitize_id did not anticipate (it truncates at
+        # whitespace and splits on '.'/'|'), which would silently invent a
+        # phantom node — so fail loudly rather than guessing.
         blast_to_name = dict(zip(nodes["blast_id"], nodes["name"]))
         for col in ("source", "target"):
-            df[col] = (df[col]
-                       .map(blast_to_name)
-                       .fillna(df[col].str.replace("_DOT_", ".", regex=False)))
+            mapped = df[col].map(blast_to_name)
+            if mapped.isna().any():
+                unmapped = sorted(df.loc[mapped.isna(), col].unique())[:5]
+                raise ValueError(
+                    f"BLAST returned {col} IDs that match no input sequence: "
+                    f"{unmapped}. This usually means a node name contains a "
+                    "character BLAST rewrites; add it to _ID_SUBSTITUTIONS."
+                )
+            df[col] = mapped
         return df
 
     # ------------------------------------------------------------------
@@ -248,8 +291,13 @@ class SequenceSimilarityNetwork:
         )
         df = df.loc[keep].copy()
 
-        # Coverage interval labels
-        df["coverage_interval"] = self._label_coverage(df)
+        # Interval labels
+        cov = df[["qcov", "scov"]].min(axis=1) * 100
+        df["coverage_interval"] = self._label_intervals(cov, self.coverage_intervals)
+        if self.identity_intervals:
+            df["identity_interval"] = self._label_intervals(
+                df["pident"], self.identity_intervals
+            )
 
         # Singletons
         if self.include_singletons:
@@ -262,9 +310,10 @@ class SequenceSimilarityNetwork:
         df["interaction"] = "A"
         return df
 
-    def _label_coverage(self, df: pd.DataFrame) -> pd.Series:
-        """Assign coverage interval labels using self.coverage_intervals."""
-        boundaries = sorted(self.coverage_intervals)
+    @staticmethod
+    def _label_intervals(values: pd.Series, intervals: list[int]) -> pd.Series:
+        """Bin a 0–100 percentage series into auto-labelled intervals."""
+        boundaries = sorted(intervals)
         if boundaries[-1] < 100:
             boundaries = boundaries + [100]
 
@@ -278,9 +327,8 @@ class SequenceSimilarityNetwork:
             for i in range(n_bins)
         ]
 
-        cov = df[["qcov", "scov"]].min(axis=1) * 100
         return pd.cut(
-            cov,
+            values,
             bins=boundaries,
             labels=labels,
             right=True,
