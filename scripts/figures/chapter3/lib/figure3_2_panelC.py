@@ -6,23 +6,96 @@ import matplotlib.patches as mpatches
 import pandas as pd
 
 # Manually curated CPS pair comparison table (14 rows).
-# Formerly stored in the chapter3_figure2 sheet of cps.xlsx (archive).
+#
+# Source of truth: Chapter 3 Results, thesis-manuscript/2026-08-25.docx.
+# (The Results section is unchanged from 2026-08-23; only the Discussion was revised.)
+# Every cell below traces to a sentence in that section; the fourteen pairs are the
+# ones the text says are "compared in detail" (14 of the 35 network edges, 40%):
+#   - eight near-identical pairs   -> Figure 3.3
+#   - three core-shared pairs      -> Figure 3.4
+#   - three branch-shared pairs    -> Figure 3.5
+# Do not edit a row without editing the corresponding manuscript sentence.
 _CPS_PAIRS_DATA = [
-    {"cps_pair": "K2/K2",    "serotype": "same",     "similarity_location": "near-identical", "dissimilarity_location": None,    "structural_change": None,              "modification_change": "acetylation",  "modification_location": "core",   "structures_comparison": "Fig3A"},
-    {"cps_pair": "SK1/K8",   "serotype": "distinct",  "similarity_location": "near-identical", "dissimilarity_location": "branch", "structural_change": "residue addition", "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3B"},
-    {"cps_pair": "K82/K8",   "serotype": "distinct",  "similarity_location": "near-identical", "dissimilarity_location": "branch", "structural_change": "residue addition", "modification_change": "deacetylation","modification_location": "core",   "structures_comparison": "Fig3B"},
-    {"cps_pair": "K40/K2",   "serotype": "distinct",  "similarity_location": "near-identical", "dissimilarity_location": "branch", "structural_change": "residue addition", "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3C"},
-    {"cps_pair": "K31/K2",   "serotype": "distinct",  "similarity_location": "near-identical", "dissimilarity_location": "branch", "structural_change": "residue addition", "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3C"},
-    {"cps_pair": "K47/K2",   "serotype": "distinct",  "similarity_location": "near-identical", "dissimilarity_location": "core",   "structural_change": "residue addition", "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3D"},
-    {"cps_pair": "K54/K43",  "serotype": "distinct",  "similarity_location": "near-identical", "dissimilarity_location": "core",   "structural_change": "residue addition", "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3E"},
-    {"cps_pair": "K48/K15",  "serotype": "distinct",  "similarity_location": "branch",         "dissimilarity_location": None,    "structural_change": None,              "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3F"},
-    {"cps_pair": "K48/K1",   "serotype": "distinct",  "similarity_location": "branch",         "dissimilarity_location": None,    "structural_change": None,              "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3F"},
-    {"cps_pair": "K57/K43",  "serotype": "distinct",  "similarity_location": "branch",         "dissimilarity_location": None,    "structural_change": None,              "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3G"},
-    {"cps_pair": "K3/K57",   "serotype": "distinct",  "similarity_location": "branch",         "dissimilarity_location": None,    "structural_change": None,              "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3G"},
-    {"cps_pair": "K32/K43",  "serotype": "distinct",  "similarity_location": "core",           "dissimilarity_location": None,    "structural_change": None,              "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3H"},
-    {"cps_pair": "K72/K2",   "serotype": "distinct",  "similarity_location": "core",           "dissimilarity_location": None,    "structural_change": None,              "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3I"},
-    {"cps_pair": "K64/K63",  "serotype": "distinct",  "similarity_location": "core",           "dissimilarity_location": None,    "structural_change": None,              "modification_change": None,           "modification_location": None,     "structures_comparison": "Fig3J"},
+    # --- Near-identical (both core and branch path Jaccard > 0.6), Figure 3.3 ---
+    {"cps_pair": "K2/K2",     "serotype": "same",       "similarity_location": "near-identical", "dissimilarity_location": None,     "structural_change": None,                          "modification_change": "acetylation",                     "modification_location": None,                  "structures_comparison": "Fig 3.3A"},
+    {"cps_pair": "K22/K37",   "serotype": "distinct",   "similarity_location": "near-identical", "dissimilarity_location": None,     "structural_change": None,                          "modification_change": "acetylation",                     "modification_location": None,                  "structures_comparison": "Fig 3.3D"},
+    {"cps_pair": "K30/K33",   "serotype": "distinct",   "similarity_location": "near-identical", "dissimilarity_location": None,     "structural_change": None,                          "modification_change": "acetyl occupancy",                "modification_location": "33% vs 100%",         "structures_comparison": "Fig 3.3C"},
+    {"cps_pair": "K30/K69",   "serotype": "distinct",   "similarity_location": "near-identical", "dissimilarity_location": None,     "structural_change": None,                          "modification_change": "pyruvylation",                    "modification_location": "ketal bond position", "structures_comparison": "Fig 3.3C"},
+    {"cps_pair": "K33/K69",   "serotype": "distinct",   "similarity_location": "near-identical", "dissimilarity_location": None,     "structural_change": None,                          "modification_change": "acetyl occupancy, pyruvylation",  "modification_location": "33% vs 100%; ketal bond", "structures_comparison": "Fig 3.3C"},
+    {"cps_pair": "K82/SK1",   "serotype": "unassigned", "similarity_location": "near-identical", "dissimilarity_location": None,     "structural_change": None,                          "modification_change": "acetylation, glutamylation",      "modification_location": None,                  "structures_comparison": "Fig 3.3B"},
+    {"cps_pair": "K8/K82",    "serotype": "distinct",   "similarity_location": "near-identical", "dissimilarity_location": "branch", "structural_change": "residue addition (Gal)",      "modification_change": "glutamylation",                   "modification_location": None,                  "structures_comparison": "Fig 3.3B"},
+    {"cps_pair": "SK1/K8",    "serotype": "unassigned", "similarity_location": "near-identical", "dissimilarity_location": "branch", "structural_change": "residue addition (Gal)",      "modification_change": "acetylation",                     "modification_location": None,                  "structures_comparison": "Fig 3.3B"},
+    # --- Core-shared (core > 0.6 only), Figure 3.4 ---
+    {"cps_pair": "K2/K13",    "serotype": "distinct",   "similarity_location": "core",           "dissimilarity_location": "branch", "structural_change": "residue addition (Gal)",      "modification_change": "acetylation, pyruvylation",       "modification_location": "20% occupancy",       "structures_comparison": "Fig 3.4A"},
+    {"cps_pair": "K74/K80",   "serotype": "distinct",   "similarity_location": "core",           "dissimilarity_location": "branch", "structural_change": "residue swap (Gal to Rha)",   "modification_change": "pyruvylation",                    "modification_location": "distinct bond",       "structures_comparison": "Fig 3.4B"},
+    {"cps_pair": "K16/K58",   "serotype": "distinct",   "similarity_location": "core",           "dissimilarity_location": "branch", "structural_change": "branch relocation, anomeric", "modification_change": "acetylation, pyruvylation",       "modification_location": "core",                "structures_comparison": "Fig 3.4C"},
+    # --- Branch-shared (branch > 0.6 only), Figure 3.5 ---
+    {"cps_pair": "K8/K8",     "serotype": "same",       "similarity_location": "branch",         "dissimilarity_location": "core",   "structural_change": "residue displacement",        "modification_change": "pyruvylation",                    "modification_location": "core",                "structures_comparison": "Fig 3.5A"},
+    {"cps_pair": "K21a/K21b", "serotype": "same",       "similarity_location": "branch",         "dissimilarity_location": "core",   "structural_change": "residue swap (Man to Rha)",   "modification_change": "acetylation",                     "modification_location": None,                  "structures_comparison": "Fig 3.5B"},
+    {"cps_pair": "K27a/K27b", "serotype": "same",       "similarity_location": "branch",         "dissimilarity_location": "core",   "structural_change": "anomeric configuration",      "modification_change": None,                              "modification_location": None,                  "structures_comparison": "Fig 3.5C"},
 ]
+
+# The five pairs whose *monosaccharide composition* differs (a residue is added or
+# swapped). A narrower set than `structural_change`, which also covers relocation,
+# displacement and anomeric changes that leave composition untouched.
+_COMPOSITION_DIFF_PAIRS = {"K8/K82", "SK1/K8", "K2/K13", "K74/K80", "K21a/K21b"}
+
+# Counts asserted by the Chapter 3 Summary section. Three are quoted verbatim from
+# the manuscript; the acetylation count is NOT — see the note below.
+_EXPECTED_COUNTS = {
+    "differ_in_any_modification": 13,   # manuscript: "thirteen differ in at least one modification (92.9%)"
+    "differ_in_modification_only": 6,   # manuscript: "six differ in modifications only (42.9%)"
+    "differ_in_composition": 5,         # manuscript: "differs in only five pairs and never alone (35.7%)"
+    "differ_in_acetylation": 9,         # manuscript says TEN (71.4%) -- see note
+}
+
+# NOTE ON THE ACETYLATION COUNT
+# The manuscript Summary states acetylation "was most often identified to be distinct
+# between similar pairs of structures (71.4%; 10 out of 14 pairs analysed in detail)".
+# Only nine of the fourteen pairs can differ in acetylation, given the manuscript's own
+# description of the K8/K82/SK1 component: K8 "carries ... no modifications at all",
+# and K82 and SK1 "differ in the presence of acetylation and of N-L-glutamate" -- so
+# acetylation sits on exactly one of K82/SK1, and therefore separates only one of the
+# two pairs K8/K82 and SK1/K8 from K8, not both. Counting both would also require SK1/K8
+# and K8/K82 each to differ in acetylation, which contradicts K8 having no modifications.
+# The nine are: K2/K2, K22/K37, K30/K33, K33/K69, K82/SK1, SK1/K8, K2/K13, K16/K58,
+# K21a/K21b. The five that do not: K30/K69 (pyruvate bond), K8/K82 (glutamate),
+# K74/K80 (pyruvylation), K8/K8 (pyruvylation), K27a/K27b (anomeric only).
+# Flagged to the author; if the manuscript is revised to 9/14 (64.3%) this table already
+# agrees. If instead a pair is reclassified, update `_EXPECTED_COUNTS` with the reason.
+
+
+def _verify_manuscript_statistics(rows):
+    """Cross-check the table against the counts quoted in the Chapter 3 Summary.
+
+    Raises if a future edit to `_CPS_PAIRS_DATA` silently breaks agreement with the
+    manuscript -- the failure mode this table has already been through once.
+    """
+    def _has(row, key):
+        val = row.get(key)
+        return val is not None and str(val).strip() not in ("", "-")
+
+    actual = {
+        "differ_in_any_modification": sum(_has(r, "modification_change") for r in rows),
+        "differ_in_modification_only": sum(
+            _has(r, "modification_change") and not _has(r, "structural_change") for r in rows
+        ),
+        "differ_in_composition": sum(r["cps_pair"] in _COMPOSITION_DIFF_PAIRS for r in rows),
+        "differ_in_acetylation": sum(
+            "acetyl" in str(r.get("modification_change") or "").lower() for r in rows
+        ),
+    }
+    mismatches = {k: (v, actual[k]) for k, v in _EXPECTED_COUNTS.items() if actual[k] != v}
+    if mismatches:
+        detail = "; ".join(
+            f"{k}: expected {exp}, table gives {got}" for k, (exp, got) in mismatches.items()
+        )
+        raise ValueError(
+            f"Figure 3.2C table no longer matches the Chapter 3 Summary statistics ({detail}). "
+            "Reconcile the table with the manuscript before regenerating the figure."
+        )
+    if len(rows) != 14:
+        raise ValueError(f"Figure 3.2C must have 14 rows, got {len(rows)}.")
 
 
 # Column display names for the 6-column format
@@ -46,6 +119,7 @@ GROUP_COLORS = {
 SEROTYPE_COLORS = {
     "same": "#e8f4e8",
     "distinct": "#fce8e8",
+    "unassigned": "#eeeeee",   # SK1 carries no serological assignment
 }
 
 # Relationship display labels
@@ -84,6 +158,7 @@ def _wrap(text, width=18):
 
 
 def plot_figure3_2_panelC(output_path: Path, style=None) -> None:
+    _verify_manuscript_statistics(_CPS_PAIRS_DATA)
     raw = pd.DataFrame(_CPS_PAIRS_DATA)
 
     # Build merged 6-column dataframe
@@ -105,10 +180,10 @@ def plot_figure3_2_panelC(output_path: Path, style=None) -> None:
     headers = [COL_LABELS[c] for c in cols]
 
     # Column widths (relative): pair, relationship, serotype, structural, modification, figure
-    col_widths = [0.85, 1.2, 0.85, 2.0, 3.2, 0.65]
+    col_widths = [0.95, 1.2, 0.9, 2.2, 3.2, 0.75]
 
     # Per-column char wrap widths — wide columns wrap late to avoid unnecessary line breaks
-    col_wrap_widths = [12, 16, 12, 28, 42, 8]
+    col_wrap_widths = [12, 16, 12, 28, 42, 10]
 
     # Build display data: replace relationship codes with labels, wrap text per column
     display_data = []
@@ -217,10 +292,11 @@ def plot_figure3_2_panelC(output_path: Path, style=None) -> None:
         mpatches.Patch(facecolor=GROUP_COLORS["core"], edgecolor="#555", label="Core-shared"),
         mpatches.Patch(facecolor=SEROTYPE_COLORS["same"], edgecolor="#555", label="Same serotype"),
         mpatches.Patch(facecolor=SEROTYPE_COLORS["distinct"], edgecolor="#555", label="Distinct serotype"),
+        mpatches.Patch(facecolor=SEROTYPE_COLORS["unassigned"], edgecolor="#555", label="No serotype assigned"),
     ]
     ax.legend(
         handles=legend_elements, loc="lower center",
-        bbox_to_anchor=(0.5, -0.07), ncol=5,
+        bbox_to_anchor=(0.5, -0.07), ncol=6,
         fontsize=8.5, frameon=False,
     )
 

@@ -20,3 +20,6 @@ other/
 # PDF is canonical for script-generated panels/legends (vector, smaller); PNG duplicate not tracked
 scripts/figures/chapter*/plots/figure*-panel*.png
 scripts/figures/chapter*/plots/legends/*.png
+scripts/figures/supplementary-figures/S11_Figure.png
+scripts/figures/chapter4/figures/figure4.1/Figure7.ai
+scripts/figures/chapter4/figures/figure4.1/K2.svg

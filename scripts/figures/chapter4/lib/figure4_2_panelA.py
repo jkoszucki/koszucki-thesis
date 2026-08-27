@@ -1,21 +1,25 @@
 """
 Figure 4.2, Panel X — GWAS prediction and O-acetylation overview table.
 
-Table with 35 most-abundant K-loci as columns and five evidence rows:
+Table with 35 most-abundant K-loci as columns and four evidence rows, ordered
+capsule-side first then phage-side (author's ordering, 2026-08-25):
 
-  Row 0: Best GWAS predictor per locus (precision >= 0.80, best F1xMCC)
-          coloured by ECOD class:
-            sgnh-ecod  → deacetylase gold (strong shade)
-            ssrbh-ecod → depolymerase green (strong shade)
-            no-ecod    → gray
-  Row 1: Predicted prophage depolymerases (PLOS Biology S3, 26 proteins)
-          strong shade → ssrbh_color; likely shade → light green
-  Row 2: Predicted prophage deacetylases (SGNH best per locus, 12 K-loci)
-          strong (precision >= 0.80) → sgnh_domain_color; likely → light gold
-  Row 3: K-locus acetyltransferase candidates (acetylases_kloci.tsv, 59 K-loci)
+  Row 1: K-locus acetyltransferase candidates (acetylases_kloci.tsv, 59 K-loci)
           present → sslbh_color (blue)
-  Row 4: O-acetylation reported in CPS repeating unit (modifications sheet)
+  Row 2: O-acetylation reported in CPS repeating unit (modifications sheet)
           kpam_reported_modification YES → dark red; NO → light salmon
+  Row 3: Predicted prophage deacetylases (SGNH best per locus, 12 K-loci)
+          strong (precision >= 0.80) → sgnh_domain_color; likely → light gold
+  Row 4: Predicted prophage depolymerases (PLOS Biology S3, 26 proteins)
+          strong shade → ssrbh_color; likely shade → light green
+
+  Optional (show_best_predictor=True, default off) an extra top row:
+          Best GWAS predictor per locus, coloured by ECOD class:
+            sgnh-ecod  → deacetylase gold; ssrbh-ecod → depolymerase green;
+            no-ecod    → gray
+
+Rows 1 and 2 were a single merged row with left/right subcells until 2026-08-25;
+they are now separate full-width rows.
 
 All filled cells show a count. Cells without data are white.
 
@@ -38,10 +42,10 @@ mpl.rcParams["ps.fonttype"] = 42
 
 _ROW_LABELS = [
     "Best GWAS predictor",
-    "Predicted depolymerase",
+    "Acetyltransferase",
+    "O-acetylation",
     "Predicted deacetylase",
-    "K-locus acetyltransferase",
-    "CPS O-acetylation",
+    "Predicted depolymerase",
 ]
 
 # The KL111 best predictor is an acetyltransferase identified via FoldSeek; it is not
@@ -184,42 +188,51 @@ def _load_o_acetylation(cps_xlsx: Path) -> dict[str, tuple[str, int]]:
     return result
 
 
-def _load_acetyl_merged(
+def _load_acetyltransferase_row(
     acetylases_kloci_tsv: Path,
+    all_k_loci: list[str],
+) -> dict[str, tuple[str, object]]:
+    """Returns {locus: (color, count)} for the acetyltransferase row.
+
+    Blue with a count where a K-locus acetyltransferase candidate is present,
+    white and unlabelled otherwise. Absent cells carried a "0" until 2026-08-25;
+    the zeros were dropped because an empty cell already reads as absence and
+    the digits competed with the counts that carry the signal.
+    """
+    at_data = _load_acetylases_kloci(acetylases_kloci_tsv)
+    result = {}
+    for locus in all_k_loci:
+        if locus in at_data:
+            result[locus] = at_data[locus]
+        else:
+            result[locus] = ("#ffffff", None)
+    return result
+
+
+def _load_acetylation_row(
     cps_xlsx: Path,
     all_k_loci: list[str],
-) -> dict[str, list[tuple[str, object]]]:
-    """Returns {locus: [at_subcell, oac_subcell]} — always exactly two subcells.
+) -> dict[str, tuple[str, object]]:
+    """Returns {locus: (color, count)} for the CPS O-acetylation row.
 
-    Left  — K-locus acetyltransferase: blue with count if present; gray, no label if absent.
-    Right — CPS O-acetylation: red with count if documented; gray with 'n/a' for loci >= 99;
-            gray, no label if absent (loci < 99).
+    Red where the modification is recorded in K-PAM, salmon where it is reported
+    only in the original NMR publication, white and unlabelled where a structure
+    exists but carries no acetylation, and 'n/a' for loci >= 99, which have no
+    resolved capsule structure at all.
 
-    A locus is included when AT is present or (OAc is present and locus < 99).
+    The 'n/a' label is kept while the zeros are dropped (2026-08-25) because the
+    two states are genuinely different: an empty cell means a structure was
+    examined and found unacetylated, 'n/a' means there is no structure to examine.
     """
-    at_data  = _load_acetylases_kloci(acetylases_kloci_tsv)
     oac_data = _load_o_acetylation(cps_xlsx)
-
-    loci = (
-        set(at_data)
-        | {l for l in oac_data if _locus_num(l) < 99}
-        | {l for l in all_k_loci if _locus_num(l) >= 99}
-    )
     result = {}
-    for locus in loci:
-        if locus in at_data:
-            at_subcell = at_data[locus]
-        elif _locus_num(locus) >= 99:
-            at_subcell = ("#ffffff", None)   # empty for loci >= 99 without AT
-        else:
-            at_subcell = (_C_NA, 0)          # gray with 0 for loci < 99 without AT
+    for locus in all_k_loci:
         if _locus_num(locus) >= 99:
-            oac_subcell = ("#ffffff", "n/a")
+            result[locus] = ("#ffffff", "n/a")
         elif locus in oac_data:
-            oac_subcell = oac_data[locus]
+            result[locus] = oac_data[locus]
         else:
-            oac_subcell = (_C_NA, 0)
-        result[locus] = [at_subcell, oac_subcell]
+            result[locus] = ("#ffffff", None)
     return result
 
 
@@ -307,15 +320,17 @@ def plot_figure4_2_panelA(
     # --- build row list ---
     all_labels = [
         "Best GWAS predictor",
-        "Predicted depolymerase",
+        "Acetyltransferase",
+        "O-acetylation",
         "Predicted deacetylase",
-        "Acetyltransferase/acetylation",
+        "Predicted depolymerase",
     ]
     all_data = [
         _load_best_predictor(best_predictors_tsv, acetylases_gwas_tsv),
-        _load_depolymerases(depolymerases_gwas_tsv),
+        _load_acetyltransferase_row(acetylases_kloci_tsv, all_k_loci),
+        _load_acetylation_row(cps_xlsx, all_k_loci),
         _load_deacetylases(deacetylases_gwas_tsv),
-        _load_acetyl_merged(acetylases_kloci_tsv, cps_xlsx, all_k_loci),
+        _load_depolymerases(depolymerases_gwas_tsv),
     ]
 
     if not show_best_predictor:
@@ -384,9 +399,16 @@ def plot_figure4_2_panelA(
         return mpatches.Patch(facecolor=color, edgecolor=edgecolor, linewidth=0.6, label=label)
 
     def _header(text):
+        """Bold legend header.
+
+        Bolding needs mathtext, but mathtext renders a hyphen as a minus sign
+        ("O-acetylation" -> "O − acetylation"), so each hyphen-separated part is
+        bolded on its own and the hyphens are emitted as plain text between them.
+        """
         import matplotlib.lines as mlines
-        latex = text.replace(" ", "~")
-        return mlines.Line2D([], [], color="none", label=f"$\\bf{{{latex}}}$")
+        parts = [seg.replace(" ", "~") for seg in text.split("-")]
+        latex = "-".join(f"$\\bf{{{seg}}}$" for seg in parts)
+        return mlines.Line2D([], [], color="none", label=latex)
 
     def _spacer():
         import matplotlib.lines as mlines
@@ -396,9 +418,15 @@ def plot_figure4_2_panelA(
     # so a reader can go straight from a row to its key.
     columns = [
         [
-            _header("Predicted depolymerase"),
-            _swatch(_C_DEPOLY_STRONG, "strong (precision ≥ 0.8)"),
-            _swatch(_C_DEPOLY_LIKELY, "likely (precision < 0.8)"),
+            _header("Acetyltransferase"),
+            _swatch(_C_ACETYL, "K-locus acetyltransferase present"),
+            _swatch("#ffffff", "none found / not searched", edgecolor="#999999"),
+        ],
+        [
+            _header("O-acetylation"),
+            _swatch(_C_OAC_KPAM,  "O-acetylation (K-PAM reported)"),
+            _swatch(_C_OAC_NKPAM, "O-acetylation (literature only)"),
+            _swatch("#ffffff",    "absent / n/a", edgecolor="#999999"),
         ],
         [
             _header("Predicted deacetylase"),
@@ -406,11 +434,9 @@ def plot_figure4_2_panelA(
             _swatch(_C_DEAC_LIKELY, "likely (precision < 0.8)"),
         ],
         [
-            _header("Acetyltransferase / acetylation"),
-            _swatch(_C_ACETYL,    "K-locus acetyltransferase present"),
-            _swatch(_C_OAC_KPAM,  "O-acetylation (KPAM-reported)"),
-            _swatch(_C_OAC_NKPAM, "O-acetylation (literature only)"),
-            _swatch("#ffffff",    "absent / n/a", edgecolor="#999999"),
+            _header("Predicted depolymerase"),
+            _swatch(_C_DEPOLY_STRONG, "strong (precision ≥ 0.8)"),
+            _swatch(_C_DEPOLY_LIKELY, "likely (precision < 0.8)"),
         ],
     ]
     # matplotlib fills legend columns top-to-bottom, so every column must be the same
@@ -418,7 +444,7 @@ def plot_figure4_2_panelA(
     depth = max(len(col) for col in columns)
     handles = [h for col in columns for h in col + [_spacer()] * (depth - len(col))]
 
-    fig_leg, ax_leg = plt.subplots(figsize=(9.0, 1.5))
+    fig_leg, ax_leg = plt.subplots(figsize=(11.0, 1.5))
     ax_leg.axis("off")
     ax_leg.legend(
         handles=handles, fontsize=labels_fs,
