@@ -15,8 +15,7 @@ Feeds figures/chapter4/.
 
 TM-align screening against no-ecod GWAS predictors is retired — it depended
 on the per-PC/protein-fold AF3 structure attachment in gwas-proc, which is
-no longer populated (see gwas-proc/main.py). See other/unused/tmalign_screen.py
-and other/unused/merge_tmalign.py.
+no longer populated (see gwas-proc/main.py).
 """
 
 import sys

@@ -10,8 +10,7 @@ Output root: cfg.output_dir / "processing" / "sgnh-hydrolases"
 Feeds figures/chapter2/.
 
 per-pc-hits/ and per-pc-best/ symlink trees (and the MAFFT alignment step that
-depended on them) are retired — unused in the manuscript. See
-other/unused/blast_alignment.py.
+depended on them) are retired — unused in the manuscript.
 """
 
 import sys

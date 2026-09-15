@@ -7,7 +7,7 @@ import pandas as pd
 
 # Manually curated CPS pair comparison table (14 rows).
 #
-# Source of truth: Chapter 3 Results, thesis-manuscript/2026-08-25.docx.
+# Last validated against: Chapter 3 Results, thesis-manuscript Doc, 2026-08-25.
 # (The Results section is unchanged from 2026-08-23; only the Discussion was revised.)
 # Every cell below traces to a sentence in that section; the fourteen pairs are the
 # ones the text says are "compared in detail" (14 of the 35 network edges, 40%):

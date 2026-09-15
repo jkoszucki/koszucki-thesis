@@ -1,7 +1,7 @@
 """
-Figure 4.2, Panel C — representative-level structural similarity network.
+S11 Figure, Panel B (support) — representative-level structural similarity network.
 
-The all-vs-all network (`figure4_2_panelC_tmalign.py`) is dense: at TM >= 0.75 its 73 nodes
+The all-vs-all network (`figureS11_panelB_tmalign.py`) is dense: at TM >= 0.75 its 73 nodes
 carry 345 edges, and near-identical proteins dominate the picture. This module collapses
 that redundancy — cluster at TM >= 0.75, keep one representative per cluster, and draw the
 relationships between representatives — so each node stands for a distinct structure rather
@@ -25,8 +25,8 @@ edges are written at all (default `edge_class_tm`, i.e. only the `high` class). 
 0.0 to emit every pair and filter inside Cytoscape instead.
 
 Outputs:
-    plots_dir/figure4_2-panelC/representatives/node.tsv
-    plots_dir/figure4_2-panelC/representatives/edge.tsv
+    plots_dir/supplement/figureS11-panelB-representatives/node.tsv
+    plots_dir/supplement/figureS11-panelB-representatives/edge.tsv
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ import pandas as pd
 from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import squareform
 
-from figure4_2_panelC_tmalign import _label, _node_type, _specificity
+from figureS11_panelB_tmalign import _label, _node_type, _specificity
 
 CLUSTER_TM    = 0.75   # cut for grouping near-identical structures
 EDGE_CLASS_TM = 0.60   # high/low split on edges between representatives
@@ -68,7 +68,7 @@ def _pick_representative(members: list[int], sim: np.ndarray, ids: list[str],
     return max(members, key=lambda i: np.mean([sim[i, j] for j in members if j != i]))
 
 
-def plot_figure4_2_panelC_representatives(
+def plot_figureS11_panelB_representatives(
     tmscore_tsv: Path,
     structure_order_tsv: Path,
     plots_dir: Path,
@@ -133,7 +133,7 @@ def plot_figure4_2_panelC_representatives(
         })
     edges = pd.DataFrame(edges).sort_values("tm_max", ascending=False)
 
-    out_dir = Path(plots_dir) / "figure4_2-panelC" / "representatives"
+    out_dir = Path(plots_dir) / "supplement" / "figureS11-panelB-representatives"
     out_dir.mkdir(parents=True, exist_ok=True)
     nodes.to_csv(out_dir / "node.tsv", sep="\t", index=False)
     edges.to_csv(out_dir / "edge.tsv", sep="\t", index=False)

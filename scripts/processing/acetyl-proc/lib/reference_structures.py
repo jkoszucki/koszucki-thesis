@@ -20,13 +20,13 @@ characterised enzyme (user, 2026-07-28). It previously used a pale red, "same hu
 characterised enzymes but lighter".
 
 The pale red `_PREDICTION_LABEL_COLOR` is gone from both panels as of 2026-07-28: the
-x-tick labels in `figures/chapter4/lib/figure4_2_panelB.py` and
-`figure4_2_panelC_heatmap.py` now carry one distinction only, red = active / black =
+x-tick labels in `figures/chapter4/lib/figureS11_panelA.py` and
+`figureS11_panelB.py` now carry one distinction only, red = active / black =
 predicted, so KL111's label is black there while its structure is rendered blue here. Both
 say "prediction", in the vocabulary each figure has available — a label colour cannot use
 the K-locus-candidate blue without clashing with the panel B bar categories.
 
-The manuscript caption matches this as of `2026-07-28.docx` (user-confirmed): panel B reads
+Last validated against the manuscript caption on 2026-07-28 (user-confirmed): panel B reads
 "three experimentally characterised enzymes (red) and the GWAS-predicted enzyme of KL111
 (black)", panel D "red for the three experimentally characterised enzymes (K1, K2, K57),
 blue for the predictions". The earlier "pale red" wording is superseded.

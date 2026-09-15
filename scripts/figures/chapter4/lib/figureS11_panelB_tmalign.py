@@ -1,16 +1,12 @@
 """
-Figure 4.2, Panel C (structure half) — acetyltransferase structural similarity network.
+S11 Figure, Panel B (support) — structure half — acetyltransferase structural similarity network.
 
-Supporting output, not a manuscript panel. Panel C itself is the 18-representative TM-score
-matrix (`figure4_2_panelC_representatives.py` → `figure4_2_panelC_heatmap.py`); this module
+Supporting output, not a manuscript panel. S11 Panel B itself is the 19-representative TM-score
+matrix (`figureS11_panelB_representatives.py` → `figureS11_panelB.py`); this module
 links the same 73 proteins by *structural* similarity as a Cytoscape network, which is
 useful for inspecting the two clusters but is not what the caption describes. It writes to
 its own `tmalign/` subfolder so it keeps the conventional `node.tsv` / `edge.tsv` names
 alongside the representatives tables.
-
-It once paired with a sequence-similarity half (`figure4_2_panelC.py`, BLASTP identity),
-which was cut from the thesis on 2026-07-27 and now lives at
-`other/unused/figure4_2_panelC_sequence_network.py`.
 
 Nothing is recomputed here. All-vs-all TM-align already runs in `processing/acetyl-proc`
 (Step 4, see `structure_order.py`), which writes the pairwise scores and the clustering
@@ -27,8 +23,8 @@ Edge cutoff: TM-score >= 0.75 by default. This is well above the 0.5 same-fold t
 used for clustering, so edges mark close structural correspondence rather than shared fold.
 
 Outputs:
-    plots_dir/figure4_2-panelC/tmalign/node.tsv
-    plots_dir/figure4_2-panelC/tmalign/edge.tsv
+    plots_dir/supplement/figureS11-panelB-tmalign/node.tsv
+    plots_dir/supplement/figureS11-panelB-tmalign/edge.tsv
 """
 
 from __future__ import annotations
@@ -138,7 +134,7 @@ def _build_edges(tmscore_tsv: Path, keep: set[str], tm_score_min: float) -> pd.D
     ].sort_values("tm_max", ascending=False)
 
 
-def plot_figure4_2_panelC_tmalign(
+def plot_figureS11_panelB_tmalign(
     tmscore_tsv: Path,
     structure_order_tsv: Path,
     acetylases_kloci_tsv: Path,
@@ -163,7 +159,7 @@ def plot_figure4_2_panelC_tmalign(
     nodes = _build_nodes(order_df, acetylases_kloci_tsv, enzymes_xlsx)
     edges = _build_edges(tmscore_tsv, set(nodes["name"]), tm_score_min)
 
-    out_dir = Path(plots_dir) / "figure4_2-panelC" / "tmalign"
+    out_dir = Path(plots_dir) / "supplement" / "figureS11-panelB-tmalign"
     out_dir.mkdir(parents=True, exist_ok=True)
     nodes.to_csv(out_dir / "node.tsv", sep="\t", index=False)
     edges.to_csv(out_dir / "edge.tsv", sep="\t", index=False)

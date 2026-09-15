@@ -26,7 +26,7 @@ entry uses it.
 > SSLBH evidence and was present only by virtue of this hand-curated list.
 
 This PC is the same one hardcoded as `_FOLDSEEK_ACETYLTRANSFERASES` in
-`figures/chapter4/lib/figure4_2_panelA.py` and as `gwas_best_at_fastas` in
+`figures/chapter4/lib/figure4_3_panelA.py` and as `gwas_best_at_fastas` in
 `figures/chapter4/main.py`, and corresponds to PROTEIN05_GWAS_AC_K111 in S1_Table.xlsx.
 All three places encode the same manual result; if it is ever revised, revise it in all
 three.

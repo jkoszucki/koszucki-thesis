@@ -1,5 +1,5 @@
 """
-Chapter 2 — Figure 2.6 Panel A: Active depolymerase pairwise BLASTP comparison.
+Chapter 2 — Figure 2.7 Panel A: Active depolymerase pairwise BLASTP comparison.
 
 Compares pairwise amino-acid sequence identity between active depolymerases
 from virulent phages (virulent_active TSV) and temperate phages (manualsearch +
@@ -22,8 +22,8 @@ Reads:
 Writes:
     analysis_dir/active_enzymes.tsv      — cleaned combined table
     analysis_dir/blastp_all_hits.tsv     — all annotated BLASTP hits
-    plots_dir/figure2_6-panelA.png / .pdf
-    plots_dir/legends/figure2_6-panelA-legend.png / .pdf
+    plots_dir/figure2_7-panelA.png / .pdf
+    plots_dir/legends/figure2_7-panelA-legend.png / .pdf
 """
 
 from __future__ import annotations
@@ -400,9 +400,9 @@ def _plot(cat_hits: pd.DataFrame, plots_dir: Path, style=None) -> None:
              fontsize=axis_label_fs, fontweight=axis_label_fw)
     plt.subplots_adjust(left=0.13)
     for ext in ("png", "pdf"):
-        out = plots_dir / f"figure2_6-panelA.{ext}"
+        out = plots_dir / f"figure2_7-panelA.{ext}"
         fig.savefig(out, dpi=dpi, bbox_inches="tight")
-        print(f"  [figure2_6-panelA] → {out.name}")
+        print(f"  [figure2_7-panelA] → {out.name}")
     plt.close(fig)
 
     # Legend
@@ -440,9 +440,9 @@ def _plot(cat_hits: pd.DataFrame, plots_dir: Path, style=None) -> None:
     legends_dir.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     for ext in ("png", "pdf"):
-        out = legends_dir / f"figure2_6-panelA-legend.{ext}"
+        out = legends_dir / f"figure2_7-panelA-legend.{ext}"
         fig_leg.savefig(out, dpi=dpi, bbox_inches="tight")
-        print(f"  [figure2_6-panelA-legend] → legends/{out.name}")
+        print(f"  [figure2_7-panelA-legend] → legends/{out.name}")
     plt.close(fig_leg)
 
 
@@ -450,7 +450,7 @@ def _plot(cat_hits: pd.DataFrame, plots_dir: Path, style=None) -> None:
 # Public entry point
 # ---------------------------------------------------------------------------
 
-def plot_figure2_6_panelA(
+def plot_figure2_7_panelA(
     virulent_active_tsv: Path,
     gwas_tsv: Path,
     manualsearch_active_tsv: Path,
@@ -481,21 +481,21 @@ def plot_figure2_6_panelA(
     analysis_dir = Path(analysis_dir)
     analysis_dir.mkdir(parents=True, exist_ok=True)
 
-    print("  [figure2_6-panelA] Loading virulent active ...")
+    print("  [figure2_7-panelA] Loading virulent active ...")
     s1 = _load_virulent(Path(virulent_active_tsv))
     print(f"    {len(s1)} proteins")
 
-    print("  [figure2_6-panelA] Loading GWAS predictions ...")
+    print("  [figure2_7-panelA] Loading GWAS predictions ...")
     s3 = _load_gwas_predictions(Path(gwas_tsv))
     print(f"    {len(s3)} proteins")
 
-    print("  [figure2_6-panelA] Loading prophage active ...")
+    print("  [figure2_7-panelA] Loading prophage active ...")
     s4_manual = _load_prophage_from_tsv(Path(manualsearch_active_tsv), "prophage")
     s4_gwas   = _load_prophage_from_tsv(Path(gwas_active_tsv), "prophage")
     s4 = pd.concat([s4_manual, s4_gwas], ignore_index=True).drop_duplicates(subset=["proteinID"]).reset_index(drop=True)
     print(f"    {len(s4)} proteins")
 
-    print("  [figure2_6-panelA] Loading prophage inactive + not produced ...")
+    print("  [figure2_7-panelA] Loading prophage inactive + not produced ...")
     s4_inactive    = _load_prophage_from_tsv(Path(manualsearch_inactive_tsv), "prophage_inactive", use_host_as_specificity=True)
     s4_notproduced = _load_prophage_from_tsv(Path(manualsearch_notproduced_tsv), "prophage_notproduced", use_host_as_specificity=True)
     print(f"    inactive: {len(s4_inactive)}, not produced: {len(s4_notproduced)}")
@@ -503,16 +503,16 @@ def plot_figure2_6_panelA(
     combined = pd.concat([s1, s3, s4, s4_inactive, s4_notproduced], ignore_index=True)
     combined_path = analysis_dir / "active_enzymes.tsv"
     combined.to_csv(combined_path, sep="\t", index=False)
-    print(f"  [figure2_6-panelA] Combined: {len(combined)} proteins → {combined_path.name}")
+    print(f"  [figure2_7-panelA] Combined: {len(combined)} proteins → {combined_path.name}")
 
-    print("  [figure2_6-panelA] Running BLASTP all-vs-all ...")
+    print("  [figure2_7-panelA] Running BLASTP all-vs-all ...")
     raw = _run_blastp(combined, Path(tmp_dir))
     print(f"    Raw BLAST rows: {len(raw)}")
 
     hits = _annotate_hits(raw, combined)
     hits_path = analysis_dir / "blastp_all_hits.tsv"
     hits.to_csv(hits_path, sep="\t", index=False)
-    print(f"  [figure2_6-panelA] Annotated pairs: {len(hits)} → {hits_path.name}")
+    print(f"  [figure2_7-panelA] Annotated pairs: {len(hits)} → {hits_path.name}")
 
     cat_hits = _assign_categories(hits)
 
@@ -528,8 +528,8 @@ def plot_figure2_6_panelA(
         "C-terminus":           ["included" if r else "not_included" for r in clean["reaches_end"]],
         "category":             clean["category"].str.replace("\n", " ", regex=False).values,
     })
-    clean_path = analysis_dir / "figure2_6_panelA_table.tsv"
+    clean_path = analysis_dir / "figure2_7_panelA_table.tsv"
     clean_out.to_csv(clean_path, sep="\t", index=False)
-    print(f"  [figure2_6-panelA] Clean table: {len(clean_out)} rows → {clean_path.name}")
+    print(f"  [figure2_7-panelA] Clean table: {len(clean_out)} rows → {clean_path.name}")
 
     _plot(cat_hits, Path(plots_dir), style=style)

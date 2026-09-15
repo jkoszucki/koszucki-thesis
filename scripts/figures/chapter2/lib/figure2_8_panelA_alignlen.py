@@ -1,5 +1,5 @@
 """
-Chapter 2 — Figure 2.6 Panel E: Alignment length vs protein length (scatter).
+Chapter 2 — Figure 2.8 Panel A (support): Alignment length vs protein length (scatter).
 
 For each active depolymerase pair with bidirectional coverage >= 50 %, plots
 alignment length (X) against protein length (Y).  Each alignment contributes
@@ -11,7 +11,7 @@ Reads:
     blastp_all_hits_tsv  — analysis_dir/blastp_all_hits.tsv
 
 Writes:
-    plots_dir/figure2_6-panelE.png / .pdf
+    plots_dir/supplement/figure2_8-panelA-alignlen.png / .pdf
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ _COLOR_SHORTER = "#1f77b4"
 _COLOR_LONGER  = "#d62728"
 
 
-def plot_figure2_6_panelE(
+def plot_figure2_8_panelA_alignlen(
     blastp_all_hits_tsv: Path,
     plots_dir: Path,
     style=None,
@@ -61,9 +61,9 @@ def plot_figure2_6_panelE(
     spans   = active[active["reaches_end"] == True]
     nospans = active[active["reaches_end"] == False]
 
-    print(f"  [figure2_6-panelE] Unique pairs: {len(active)}")
-    print(f"  [figure2_6-panelE] Spans C-terminal:        n={len(spans)}")
-    print(f"  [figure2_6-panelE] Does not span C-terminal: n={len(nospans)}")
+    print(f"  [figure2_8-panelA-alignlen] Unique pairs: {len(active)}")
+    print(f"  [figure2_8-panelA-alignlen] Spans C-terminal:        n={len(spans)}")
+    print(f"  [figure2_8-panelA-alignlen] Does not span C-terminal: n={len(nospans)}")
 
     ms  = 35   # marker size
     lw  = 1.2  # edge linewidth for hollow markers
@@ -120,11 +120,11 @@ def plot_figure2_6_panelE(
     axes[0].legend(handles=legend_handles, fontsize=(tfs - 1) * 0.7,
                    frameon=False, loc="upper left")
 
-    plots_dir = Path(plots_dir)
-    plots_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = Path(plots_dir) / "supplement"
+    out_dir.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     for ext in ("png", "pdf"):
-        out = plots_dir / f"figure2_6-panelE.{ext}"
+        out = out_dir / f"figure2_8-panelA-alignlen.{ext}"
         fig.savefig(out, dpi=dpi, bbox_inches="tight")
-        print(f"  [figure2_6-panelE] → {out.name}")
+        print(f"  [figure2_8-panelA-alignlen] → {out.name}")
     plt.close(fig)

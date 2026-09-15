@@ -6,7 +6,7 @@ The 69 K-locus acetyltransferase result files in
 FoldSeek web server's results table. This script reproduces that exact table from the
 raw JSON the server also offers, so results retrieved as JSON (e.g. for the experimental
 acetyltransferases) can be filed in the same format and read by
-`figures/chapter4/lib/figure4_2_panelB.py` without special-casing.
+`figures/chapter4/lib/figureS11_panelA.py` without special-casing.
 
     conda run -n jkoszucki python scripts/helpers/foldseek_json_to_xlsx.py \
         --json ~/Downloads/Foldseek_2026_07_26_16_33_18.json \

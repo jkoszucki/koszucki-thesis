@@ -1,7 +1,7 @@
 """
-Figure 4.2, Panel C — TM-score matrix of the structural representatives.
+S11 Figure, Panel B — TM-score matrix of the structural representatives.
 
-An alternative to the representative network (`figure4_2_panelC_representatives.py`) that
+An alternative to the representative network (`figureS11_panelB_representatives.py`) that
 shows the same comparison without a threshold. The network binarises a continuum: it draws
 an edge above a cut and nothing below, and the cut has to be defended. The matrix shows
 every pairwise TM-score on a continuous scale, so the block structure — two folds with
@@ -25,7 +25,7 @@ black = predicted — so the same protein reads the same way across panels. Clus
 appended to each label, since one row can stand for up to 13 proteins.
 
 Outputs:
-    plots_dir/figure4_2-panelC.png / .pdf
+    plots_dir/supplementary/figureS11-panelB.png / .pdf
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ import pandas as pd
 from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.spatial.distance import squareform
 
-from figure4_2_panelC_tmalign import _node_type
+from figureS11_panelB_tmalign import _node_type
 
 mpl.rcParams["font.family"] = "Arial"
 mpl.rcParams["pdf.fonttype"] = 42
@@ -49,7 +49,7 @@ _CMAP        = "Blues"     # single hue, light -> dark; magnitude, not category
 _VMIN, _VMAX = 0.20, 1.00
 _SAME_FOLD   = 0.50        # dendrogram reference line; the panel 3.2B cluster cut
 
-_REFERENCE_LABEL_COLOR  = "#b2182b"   # characterised enzyme  — matches figure4_2_panelB
+_REFERENCE_LABEL_COLOR  = "#b2182b"   # characterised enzyme  — matches figureS11_panelA
 _DEFAULT_LABEL_COLOR    = "#000000"   # everything predicted: GWAS + K-locus candidates
 
 
@@ -73,7 +73,7 @@ def _matrix(tmscore_tsv: Path, ids: list[str]) -> np.ndarray:
     return sim
 
 
-def plot_figure4_2_panelC_heatmap(
+def plot_figureS11_panelB(
     tmscore_tsv: Path,
     representatives_node_tsv: Path,
     plots_dir: Path,
@@ -85,7 +85,7 @@ def plot_figure4_2_panelC_heatmap(
 
     Args:
         tmscore_tsv:              cps_acetylases/tmalign/acetylases_kloci_tmscore.tsv
-        representatives_node_tsv: plots/figure4_2-panelC/representatives/node.tsv —
+        representatives_node_tsv: plots/supplement/figureS11-panelB-representatives/node.tsv —
                                   defines which proteins are representatives and how many
                                   proteins each one stands for
         plots_dir:                scripts/figures/chapter4/plots
@@ -168,11 +168,12 @@ def plot_figure4_2_panelC_heatmap(
     cbar.outline.set_visible(False)
 
     plots_dir = Path(plots_dir)
-    plots_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = plots_dir / "supplementary"
+    out_dir.mkdir(parents=True, exist_ok=True)
     for ext in ("png", "pdf"):
-        out = plots_dir / f"figure4_2-panelC.{ext}"
+        out = out_dir / f"figureS11-panelB.{ext}"
         fig.savefig(out, dpi=dpi, bbox_inches="tight")
-        print(f"  [figure4_2-panelC] → {out.name}")
+        print(f"  [figureS11-panelB] → {out.name}")
     plt.close(fig)
 
     off = m[~np.eye(len(m), dtype=bool)]
@@ -182,5 +183,5 @@ def plot_figure4_2_panelC_heatmap(
 
 def _short(protein_id: str) -> str:
     """Row label: K-locus for candidates, active_AT_/gwas_AT_ for reference proteins."""
-    from figure4_2_panelC_tmalign import _label
+    from figureS11_panelB_tmalign import _label
     return _label(protein_id, _node_type(protein_id))

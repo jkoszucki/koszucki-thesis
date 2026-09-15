@@ -1,18 +1,18 @@
 """
-Chapter 2 — Figure 2.6 Panel B: Cytoscape network of distinct-specificity depolymerase pairs.
+Chapter 2 — Figure 2.8 Panel A: Cytoscape network of distinct-specificity depolymerase pairs.
 
-Reads BLASTP hits from figure6_panelA analysis outputs, filters to distinct-specificity
+Reads BLASTP hits from figure2_7_panelA analysis outputs, filters to distinct-specificity
 pairs, and writes node/edge tables for Cytoscape.
 
 Node colour encodes source: magenta = prophage, purple = virulent.
 
 Reads:
     active_enzymes_tsv   — analysis_dir/active_enzymes.tsv
-    hits_tsv             — analysis_dir/figure6_panelA_table.tsv
+    hits_tsv             — analysis_dir/figure2_7_panelA_table.tsv
 
 Writes:
-    plots_dir/figure2_6-panelB/node.tsv
-    plots_dir/figure2_6-panelB/edge.tsv
+    plots_dir/figure2_8-panelA/node.tsv
+    plots_dir/figure2_8-panelA/edge.tsv
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ def _normalize_label(spec: str) -> str:
     return "/".join(parts)
 
 
-def plot_figure2_6_panelB(
+def plot_figure2_8_panelA(
     active_enzymes_tsv: Path,
     hits_tsv: Path,
     plots_dir: Path,
@@ -50,7 +50,7 @@ def plot_figure2_6_panelB(
 
     Args:
         active_enzymes_tsv: analysis_dir/active_enzymes.tsv (proteinID, source, K_locus_specificity)
-        hits_tsv:           analysis_dir/figure6_panelA_table.tsv (clean hit table)
+        hits_tsv:           analysis_dir/figure2_7_panelA_table.tsv (clean hit table)
         plots_dir:          output directory for plots
         style:              cfg.style (optional, unused — colours are hardcoded)
     """
@@ -63,7 +63,7 @@ def plot_figure2_6_panelB(
     # Unique distinct-specificity pairs (use "all" category to avoid duplicates)
     pairs = hits[hits["category"] == "distinct-specificity (all)"].copy()
     pairs = pairs.drop_duplicates(subset=["protein1", "protein2"])
-    print(f"  [figure2_6-panelB] Distinct-specificity pairs: {len(pairs)}")
+    print(f"  [figure2_8-panelA] Distinct-specificity pairs: {len(pairs)}")
 
     # Collect all node IDs from these pairs
     node_ids = pd.unique(pairs[["protein1", "protein2"]].values.ravel())
@@ -98,12 +98,12 @@ def plot_figure2_6_panelB(
 
     edges["source_pair"] = [_source_pair(q, s) for q, s in zip(edges["source_node"], edges["target_node"])]
 
-    out_dir = Path(plots_dir) / "figure2_6-panelB"
+    out_dir = Path(plots_dir) / "figure2_8-panelA"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     nodes.to_csv(out_dir / "node.tsv", sep="\t", index=False)
     edges.to_csv(out_dir / "edge.tsv", sep="\t", index=False)
 
-    print(f"  [figure2_6-panelB] {len(nodes)} nodes, {len(edges)} edges")
-    print(f"  [figure2_6-panelB] → {out_dir}/node.tsv")
-    print(f"  [figure2_6-panelB] → {out_dir}/edge.tsv")
+    print(f"  [figure2_8-panelA] {len(nodes)} nodes, {len(edges)} edges")
+    print(f"  [figure2_8-panelA] → {out_dir}/node.tsv")
+    print(f"  [figure2_8-panelA] → {out_dir}/edge.tsv")

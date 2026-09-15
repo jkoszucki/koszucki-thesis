@@ -6,11 +6,9 @@ Pipeline:
                                   cps_acetylases/acetylases_literature_active.tsv
 
 Both tables already carry a `sequence` column, and the corresponding AF3
-structures are indexed under other/alphafold3/ (built + maintained by
+structures are indexed under output_dir/other/alphafold3/ (built + maintained by
 scripts/helpers/build_af3_index.py) — so there is no separate per-protein
-output tree here any more. The former enzymes/{proteinID}/ tree (sequence.fasta,
-structure.cif symlink, against-prophages/raw_blast.tsv) duplicated data already
-in the tables above and had no consumer; see other/unused/enzyme_export.py.
+output tree here.
 """
 
 import sys
