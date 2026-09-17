@@ -100,7 +100,7 @@ def _build_prophage_genbanks(genbank_dir: Path, out_dir: Path) -> None:
         if not src.exists():
             print(f"  [warn] GenBank not found: {src}")
             continue
-        shutil.copy2(src, dst)
+        shutil.copyfile(src, dst)
         print(f"  {prophage_id}.gb → prophages/")
 
 
@@ -187,7 +187,15 @@ def analyse_n_terminal(
     print(f"  3_one_per_cluster.tsv — {len(one)} phages (one per wgrr50)")
 
     # Step 4 — map genomeID + isolation/environment metadata
-    bact = pd.read_csv(bacteria_metadata_tsv, sep="\t")
+    # 1_BACTERIA/ (the 3,901 host genomes and their metadata) is too large for the
+    # deposited record, so a run from the Figshare input has no bacteria_metadata.tsv.
+    # The host columns are descriptive only: keep the phage-to-genome mapping and leave
+    # them empty rather than fail.
+    if Path(bacteria_metadata_tsv).exists():
+        bact = pd.read_csv(bacteria_metadata_tsv, sep="\t")
+    else:
+        print(f"  [warn] {bacteria_metadata_tsv} not found — host metadata columns left empty")
+        bact = pd.DataFrame(columns=GENOME_META_COLS)
     # prophages_metadata already loaded as meta; get genomeID per prophageID
     prophage_to_genome = meta[["prophageID", "genomeID"]].drop_duplicates()
     out4 = one.merge(prophage_to_genome, on="prophageID", how="left")

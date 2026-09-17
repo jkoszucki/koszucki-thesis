@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict
@@ -32,9 +33,20 @@ class Config:
         with open(self._CONFIG_PATH) as f:
             data = yaml.safe_load(f)
         paths = data["paths"]
-        self.input_dir = Path(paths["input_dir"])
-        self.output_dir = Path(paths["output_dir"])
-        self.gwas_path = Path(paths["gwas_path"])
+        # THESIS_INPUT_DIR / THESIS_OUTPUT_DIR override config.yml, e.g. to write a trial
+        # run somewhere else without editing the file.
+        self.input_dir = Path(os.environ.get("THESIS_INPUT_DIR") or paths["input_dir"]).expanduser()
+        self.output_dir = Path(os.environ.get("THESIS_OUTPUT_DIR") or paths["output_dir"]).expanduser()
+        # gwas_path is optional: the GWAS data ships inside the input folder.
+        self.gwas_path = Path(
+            os.environ.get("THESIS_GWAS_PATH") or paths.get("gwas_path") or self.input_dir / "data-gwas"
+        ).expanduser()
+        if not self.input_dir.is_dir():
+            raise FileNotFoundError(
+                f"input_dir does not exist: {self.input_dir}\n"
+                f"Set paths.input_dir in {self._CONFIG_PATH} to the unpacked Figshare input."
+            )
+        self.output_dir.mkdir(parents=True, exist_ok=True)
 
         s = data.get("style", {})
         self.style = Style(

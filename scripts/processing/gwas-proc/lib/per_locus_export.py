@@ -81,7 +81,7 @@ def export_per_locus(
             continue
         dest_dir = _pc_dir(gwas_root, row) / "protein"
         dest_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest_dir / "pc.fasta")
+        shutil.copyfile(src, dest_dir / "pc.fasta")
         align_ok += 1
     print(f"    Copied {align_ok}/{len(hits)}")
     for m in align_missing[:10]:

@@ -63,7 +63,7 @@ import shutil, pandas as pd
 rbp_deacetylases_dir.mkdir(parents=True, exist_ok=True)
 _src = sgnh_dir / "gwas_sgnh_best.tsv"
 _dst = rbp_deacetylases_dir / "deacetylases_gwas.tsv"
-shutil.copy2(_src, _dst)
+shutil.copyfile(_src, _dst)
 print(f"  deacetylases_gwas.tsv — {len(pd.read_csv(_dst, sep=chr(9)))} rows → {_dst}")
 
 # Phandango files are exported by processing/gwas-proc/ (Step 2h)
