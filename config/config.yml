@@ -1,7 +1,7 @@
 paths:
-  input_dir:  /Users/januszkoszucki/Projects/thesis-claude/data/input
-  output_dir: /Users/januszkoszucki/Projects/thesis-claude/data/output
-  gwas_path:  /Users/januszkoszucki/Projects/thesis-claude/data/input/data-gwas
+  input_dir:  /Users/januszkoszucki/Projects/archive/2026-09-17-thesis-koszucki/data/input
+  output_dir: /Users/januszkoszucki/Projects/archive/2026-09-17-thesis-koszucki/data/output
+  gwas_path:  /Users/januszkoszucki/Projects/archive/2026-09-17-thesis-koszucki/data/input/data-gwas
 
 af3_set_colors:
   # Experimentally active — vivid saturated colors

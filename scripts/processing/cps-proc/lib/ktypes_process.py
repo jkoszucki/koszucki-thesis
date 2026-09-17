@@ -12,6 +12,87 @@ from ktypes_base import BaseKTypeAPI
 
 ALLOWED = {"Glc", "GlcA", "Man", "Rha", "Fuc", "Gal", "GalA", "Galf", "Sug"}
 ANCHOR_POS_RE = re.compile(r"@P(\d+)")
+BOND_RE = re.compile(r"^[ab]1-[1-6]$")          # normalised bond token, e.g. a1-3, b1-4
+BRANCH_ANCHOR_RE = re.compile(r"\(P(\d+)\)$")   # trailing (P#) on a branch path
+
+
+class StructureFormatError(ValueError):
+    """Raised when a repeating-unit string in the input workbook is malformed."""
+
+
+def _reverse_bond(bond: str) -> str:
+    """Reverse the direction of a glycosidic bond token: a1-3 -> a3-1.
+
+    A bond token reads donor-anomeric-position -> acceptor-position. When a
+    path is read backwards the acceptor becomes the first residue, so the
+    positions swap. Tokens that do not match the standard form are returned
+    with a trailing apostrophe so they can never collide with a forward token.
+    """
+    m = re.fullmatch(r"([ab])(\d)-(\d)", bond)
+    return f"{m.group(1)}{m.group(3)}-{m.group(2)}" if m else bond + "'"
+
+
+def validate_structure(structure_id: str, backbone: str, branch) -> List[str]:
+    """Return a list of format problems for one repeating unit (empty if clean).
+
+    Checks, on the normalised strings:
+      * backbone ends with -OUT and every segment is Residue(bond)
+      * every residue is in ALLOWED, every bond matches BOND_RE
+      * the core has as many bonds as residues (it is a ring)
+      * every branch path ends with a (P#) anchor whose residue is the one
+        actually at core position #, and every branch bond matches BOND_RE
+    """
+    problems: List[str] = []
+    bb = str(backbone)
+    if not bb.strip().endswith("-OUT"):
+        problems.append(f"{structure_id}: backbone does not end with '-OUT': {bb!r}")
+    core_monos, core_bonds = [], []
+    for part in (x for x in re.sub(r"-?OUT$", "", _norm_text(bb)).split(")") if x):
+        mono, sep, bond = part.partition("(")
+        if not sep or not mono or not bond:
+            problems.append(f"{structure_id}: backbone segment is not Residue(bond): {part!r}")
+            continue
+        if mono not in ALLOWED:
+            problems.append(f"{structure_id}: unknown core residue {mono!r}")
+        if not BOND_RE.match(bond):
+            problems.append(f"{structure_id}: malformed core bond {bond!r} (expected e.g. a1-3)")
+        core_monos.append(mono)
+        core_bonds.append(bond)
+    if core_monos and len(core_bonds) != len(core_monos):
+        problems.append(f"{structure_id}: core has {len(core_monos)} residues but {len(core_bonds)} bonds")
+
+    if _is_missing_branch_text(branch):
+        return problems
+    for path in str(branch).split(";"):
+        ps = _norm_text(path)
+        if not ps:
+            problems.append(f"{structure_id}: empty branch path (stray ';')")
+            continue
+        m = BRANCH_ANCHOR_RE.search(ps)
+        if not m:
+            problems.append(f"{structure_id}: branch path lacks a (P#) anchor: {path.strip()!r}")
+            continue
+        segs = []
+        for part in (x for x in ps.split(")") if x):
+            mono, sep, right = part.partition("(")
+            if not sep or not mono or not right:
+                problems.append(f"{structure_id}: branch segment is not Residue(bond): {part!r}")
+                continue
+            segs.append((mono, right))
+        if not segs:
+            continue
+        pos = int(m.group(1))
+        anchor = segs[-1][0]
+        if pos < 1 or pos > len(core_monos):
+            problems.append(f"{structure_id}: anchor P{pos} out of range, core has {len(core_monos)} residues: {path.strip()!r}")
+        elif core_monos[pos - 1] != anchor:
+            problems.append(f"{structure_id}: anchor says {anchor}(P{pos}) but core position {pos} is {core_monos[pos - 1]}: {path.strip()!r}")
+        for mono, bond in segs[:-1]:
+            if mono not in ALLOWED:
+                problems.append(f"{structure_id}: unknown branch residue {mono!r}")
+            if not BOND_RE.match(bond):
+                problems.append(f"{structure_id}: malformed branch bond {bond!r} in {path.strip()!r}")
+    return problems
 
 
 def _pick_col(df: pd.DataFrame, candidates_lower: Sequence[str]) -> Optional[str]:
@@ -92,12 +173,27 @@ def _assemble_core_fields(monos: Sequence[str], bonds: Sequence[str]) -> Dict[st
     }
 
 
-def _path_fingerprint(monos: list[str], bonds: list[str], circular: bool = False) -> frozenset[tuple]:
-    """All bidirectional contiguous subpaths from a mono/bond sequence.
+def _reverse_path(path: tuple) -> tuple:
+    """Read a (mono, bond, mono, ...) path backwards, reversing each bond token."""
+    rev = []
+    for i, elem in enumerate(reversed(path)):
+        # In the reversed tuple, odd indices hold bond tokens.
+        rev.append(_reverse_bond(elem) if i % 2 == 1 else elem)
+    return tuple(rev)
 
-    If circular=True and len(bonds) == len(monos), the sequence is treated as a
-    cyclic ring: subpaths that cross the end→start boundary are included by
-    extending the sequence to length 2n and taking all windows of length 1…n.
+
+def _path_fingerprint(monos: list[str], bonds: list[str], circular: bool = False) -> frozenset[tuple]:
+    """All contiguous subpaths of a residue/bond sequence, in both directions.
+
+    A path is the tuple (m1, b1, m2, b2, ..., mk). Each path is added together
+    with its reverse; the reverse carries reversed bond tokens (a1-3 -> a3-1),
+    because a glycosidic bond is directional and a path read backwards must
+    not collide with a genuinely opposite linkage read forwards.
+
+    If circular=True and len(bonds) == len(monos), the sequence is a ring of n
+    residues joined by n bonds (the n-th closing the ring). Subpaths crossing
+    the ring closure are captured by doubling the sequence to length 2n and
+    taking every window of length 1..n from each of the n start positions.
     """
     paths: set[tuple] = set()
     n = len(monos)
@@ -105,34 +201,23 @@ def _path_fingerprint(monos: list[str], bonds: list[str], circular: bool = False
         return frozenset()
 
     if circular and len(bonds) == n:
-        monos_ext = list(monos) + list(monos)
-        bonds_ext = list(bonds) + list(bonds)
-        for start in range(n):
-            for length in range(1, n + 1):
-                end = start + length
-                seg_m = tuple(monos_ext[start:end])
-                seg_b = tuple(bonds_ext[start:end - 1])
-                elems: list = []
-                for i, m in enumerate(seg_m):
-                    elems.append(m)
-                    if i < len(seg_b):
-                        elems.append(seg_b[i])
-                fwd = tuple(elems)
-                paths.add(fwd)
-                paths.add(fwd[::-1])
+        monos_ext, bonds_ext = list(monos) * 2, list(bonds) * 2
+        windows = ((start, start + length) for start in range(n) for length in range(1, n + 1))
     else:
-        for start in range(n):
-            for end in range(start + 1, n + 1):
-                seg_m = tuple(monos[start:end])
-                seg_b = tuple(bonds[start:end - 1])
-                elems: list = []
-                for i, m in enumerate(seg_m):
-                    elems.append(m)
-                    if i < len(seg_b):
-                        elems.append(seg_b[i])
-                fwd = tuple(elems)
-                paths.add(fwd)
-                paths.add(fwd[::-1])
+        monos_ext, bonds_ext = list(monos), list(bonds)
+        windows = ((start, end) for start in range(n) for end in range(start + 1, n + 1))
+
+    for start, end in windows:
+        seg_m = monos_ext[start:end]
+        seg_b = bonds_ext[start:end - 1]
+        elems: list = []
+        for i, m in enumerate(seg_m):
+            elems.append(m)
+            if i < len(seg_b):
+                elems.append(seg_b[i])
+        fwd = tuple(elems)
+        paths.add(fwd)
+        paths.add(_reverse_path(fwd))
     return frozenset(paths)
 
 
@@ -342,6 +427,16 @@ class KTypeTablesAPI(BaseKTypeAPI):
         df["_OAc"] = df_raw[oac_col].astype(str) if oac_col else ""
         df["_Opy"] = df_raw[opy_col].astype(str) if opy_col else ""
 
+        problems: List[str] = []
+        for idx, record in df.iterrows():
+            sid = str(df_raw.loc[idx, "structure_id"]) if "structure_id" in df_raw.columns else record["K_type"]
+            problems += validate_structure(sid, record["_backbone"], df_raw.loc[idx, branches_col] if branches_col else None)
+        if problems:
+            raise StructureFormatError(
+                f"{len(problems)} problem(s) in the input structures — fix the workbook, "
+                "nothing was written:\n  " + "\n  ".join(problems)
+            )
+
         rows = []
         for idx, record in df.iterrows():
             branch_parsed = _parse_branch_simple(record["_branch"])
@@ -402,16 +497,15 @@ class KTypeTablesAPI(BaseKTypeAPI):
         )
         ordered_cols = orig_cols + core_cols + branch_cols
         leftover = [c for c in out_df.columns if c not in ordered_cols]
-        leftover.append('mw_struct_kda_cat')
 
-        low_mass = out_df['mw_struct_kda'] < 0.7
-        medium_mass = (out_df['mw_struct_kda'] >= 0.7) & (out_df['mw_struct_kda'] < 1)
-        high_mass = out_df['mw_struct_kda'] >= 1
-
-        out_df['mw_struct_kda_cat'] = 'unassigned'
-        out_df.loc[low_mass, 'mw_struct_kda_cat'] = 'low'
-        out_df.loc[medium_mass, 'mw_struct_kda_cat'] = 'medium'
-        out_df.loc[high_mass, 'mw_struct_kda_cat'] = 'high'
+        # Molecular-weight category: optional, only when the workbook carries the column.
+        if "mw_struct_kda" in out_df.columns:
+            mw = pd.to_numeric(out_df["mw_struct_kda"], errors="coerce")
+            out_df["mw_struct_kda_cat"] = "unassigned"
+            out_df.loc[mw < 0.7, "mw_struct_kda_cat"] = "low"
+            out_df.loc[(mw >= 0.7) & (mw < 1), "mw_struct_kda_cat"] = "medium"
+            out_df.loc[mw >= 1, "mw_struct_kda_cat"] = "high"
+            leftover.append("mw_struct_kda_cat")
 
         return out_df[ordered_cols + leftover]
 
@@ -434,153 +528,71 @@ class KTypeTablesAPI(BaseKTypeAPI):
         return self.save_dataframe(processed, filename or self.PROCESSED_FILENAME)
 
     def compute_similarity(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """All-vs-all path-based Jaccard similarity between repeating units.
+
+        For every unordered pair of structures the score is the Jaccard
+        coefficient of their path fingerprints (see ``_path_fingerprint``),
+        computed separately for the cyclic core, the branches, and the union
+        of the two.  The branch score is NaN when neither structure carries a
+        branch.  Structures are keyed by ``structure_id`` so that serotypes
+        with two resolved structures are scored as separate entries.  Only
+        the identifiers and the three scores are written; the fingerprint
+        sets themselves are intermediates and are not exported.
+        """
         processed = df if df is not None else self.build_processed_table()
-        required = [
-            "K_type",
-            "core_monos_unique",
-            "branch_monos_unique",
-            "core_pairs",
-            "branch_pairs",
-            "core_bonds_unique",
-            "branch_bonds_unique",
-        ]
+        required = ["K_type", "core_monos_all", "core_bonds_all"]
         missing = [col for col in required if col not in processed.columns]
         if missing:
             raise ValueError(f"Missing required columns: {missing}")
 
-        def to_set(value: object) -> set[str]:
+        def split(value: object) -> list[str]:
             if pd.isna(value) or str(value).strip() == "":
-                return set()
-            return {token.strip() for token in str(value).split(";") if token.strip()}
+                return []
+            return [token for token in str(value).split("; ") if token]
 
-        def join_sorted(values: set[str]) -> str:
-            return "; ".join(sorted(values)) if values else ""
-
-        def join_fps(fps: frozenset[tuple]) -> str:
-            return "; ".join(sorted("~".join(str(x) for x in path) for path in fps)) if fps else ""
-
-        def jaccard(a: set[str], b: set[str], nan_if_both_empty: bool = False) -> float:
+        def jaccard(a: frozenset, b: frozenset) -> float:
             if not a and not b:
-                return np.nan if nan_if_both_empty else np.nan
+                return np.nan
             if not a or not b:
                 return 0.0
             return len(a & b) / len(a | b)
 
-        def weighted(parts: Sequence[float], weights: Sequence[float]) -> float:
-            xs, ws = [], []
-            for value, weight in zip(parts, weights):
-                if value is None:
-                    continue
-                try:
-                    fval = float(value)
-                except Exception:
-                    continue
-                if np.isnan(fval):
-                    continue
-                xs.append(fval)
-                ws.append(float(weight))
-            if not ws:
-                return np.nan
-            ws_arr = np.array(ws)
-            ws_arr = ws_arr / ws_arr.sum()
-            return float(np.dot(ws_arr, np.array(xs)))
-
-        W_COMP, W_PAIR, W_BOND = 0.60, 0.25, 0.15
-
-        # Use structure_id as the primary key so that structures sharing the same
-        # K_type (e.g. CPS2_K2 and CPS78_K2_NTUH_A4528) are each treated as a
-        # distinct entry rather than silently overwriting each other.
         id_col = "structure_id" if "structure_id" in processed.columns else "K_type"
-        ids = [str(r) for r in processed[id_col].tolist()]
-        id_to_ktype = {str(row[id_col]): str(row["K_type"]) for _, row in processed.iterrows()}
+        branch_col = next((c for c in processed.columns if c.lower() in {"branch", "branches"}), None)
 
-        monos_core = {str(row[id_col]): to_set(row["core_monos_unique"]) for _, row in processed.iterrows()}
-        monos_branch = {
-            str(row[id_col]): to_set(row["branch_monos_unique"]) for _, row in processed.iterrows()
-        }
-        pairs_core = {str(row[id_col]): to_set(row["core_pairs"]) for _, row in processed.iterrows()}
-        pairs_branch = {
-            str(row[id_col]): to_set(row["branch_pairs"]) for _, row in processed.iterrows()
-        }
-        bonds_core = {
-            str(row[id_col]): to_set(row["core_bonds_unique"]) for _, row in processed.iterrows()
-        }
-        bonds_branch = {
-            str(row[id_col]): to_set(row["branch_bonds_unique"]) for _, row in processed.iterrows()
-        }
-
-        monos_total = {k: monos_core[k] | monos_branch[k] for k in monos_core}
-        pairs_total = {k: pairs_core[k] | pairs_branch[k] for k in pairs_core}
-        bonds_total = {k: bonds_core[k] | bonds_branch[k] for k in bonds_core}
-
-        _branch_col = next((c for c in processed.columns if c.lower() in {"branch", "branches"}), None)
-        core_fps = {sid: _path_fingerprint(
-            [m for m in str(processed.loc[processed[id_col] == sid, "core_monos_all"].iloc[0]).split("; ") if m],
-            [b for b in str(processed.loc[processed[id_col] == sid, "core_bonds_all"].iloc[0]).split("; ") if b],
-            circular=True,
-        ) for sid in ids}
-        branch_fps = {sid: _branch_path_fingerprint(
-            processed.loc[processed[id_col] == sid, _branch_col].iloc[0] if _branch_col else ""
-        ) for sid in ids}
+        ids: list[str] = []
+        id_to_ktype: Dict[str, str] = {}
+        core_fps: Dict[str, frozenset] = {}
+        branch_fps: Dict[str, frozenset] = {}
+        for _, row in processed.iterrows():
+            sid = str(row[id_col])
+            ids.append(sid)
+            id_to_ktype[sid] = str(row["K_type"])
+            core_fps[sid] = _path_fingerprint(
+                split(row["core_monos_all"]), split(row["core_bonds_all"]), circular=True
+            )
+            branch_fps[sid] = _branch_path_fingerprint(row[branch_col] if branch_col else "")
         total_fps = {sid: core_fps[sid] | branch_fps[sid] for sid in ids}
 
         rows = []
         for i in range(len(ids)):
             for j in range(i + 1, len(ids)):
                 a, b = ids[i], ids[j]
-
-                comp_core = jaccard(monos_core[a], monos_core[b])
-                comp_branch = jaccard(
-                    monos_branch[a], monos_branch[b], nan_if_both_empty=True
-                )
-                comp_total = jaccard(monos_total[a], monos_total[b])
-
-                pair_core = jaccard(pairs_core[a], pairs_core[b])
-                pair_branch = jaccard(
-                    pairs_branch[a], pairs_branch[b], nan_if_both_empty=True
-                )
-                pair_total = jaccard(pairs_total[a], pairs_total[b])
-
-                bond_core = jaccard(bonds_core[a], bonds_core[b])
-                bond_branch = jaccard(
-                    bonds_branch[a], bonds_branch[b], nan_if_both_empty=True
-                )
-                bond_total = jaccard(bonds_total[a], bonds_total[b])
-
-                weighted_total = weighted([comp_total, pair_total, bond_total], [W_COMP, W_PAIR, W_BOND])
-                weighted_core = weighted([comp_core, pair_core, bond_core], [W_COMP, W_PAIR, W_BOND])
-                weighted_branch = weighted(
-                    [comp_branch, pair_branch, bond_branch], [W_COMP, W_PAIR, W_BOND]
-                )
-
                 pj_core = jaccard(core_fps[a], core_fps[b])
-                pj_branch = jaccard(branch_fps[a], branch_fps[b], nan_if_both_empty=True)
+                pj_branch = jaccard(branch_fps[a], branch_fps[b])
                 pj_total = jaccard(total_fps[a], total_fps[b])
-
                 rows.append(
                     {
                         "structure_id_1": a,
                         "structure_id_2": b,
-                        "K_type_1": id_to_ktype.get(a, a),
-                        "K_type_2": id_to_ktype.get(b, b),
-                        "path_core_set_1": join_fps(core_fps[a]),
-                        "path_core_set_2": join_fps(core_fps[b]),
-                        "path_branch_set_1": join_fps(branch_fps[a]),
-                        "path_branch_set_2": join_fps(branch_fps[b]),
-                        "path_total_set_1": join_fps(total_fps[a]),
-                        "path_total_set_2": join_fps(total_fps[b]),
+                        "K_type_1": id_to_ktype[a],
+                        "K_type_2": id_to_ktype[b],
                         "path_jaccard_core": round(float(pj_core), 3),
-                        "path_jaccard_branch": None
-                        if pd.isna(pj_branch)
-                        else round(float(pj_branch), 3),
+                        "path_jaccard_branch": None if pd.isna(pj_branch) else round(float(pj_branch), 3),
                         "path_jaccard_total": round(float(pj_total), 3),
                     }
                 )
-
-        sim_df = pd.DataFrame(rows)
-        if "structure_id_1" in sim_df.columns and "structure_id_2" in sim_df.columns:
-            sim_df = sim_df[sim_df["structure_id_1"] != sim_df["structure_id_2"]]
-        return sim_df
+        return pd.DataFrame(rows)
 
     def export_similarity_table(
         self, df: Optional[pd.DataFrame] = None, filename: Optional[str] = None

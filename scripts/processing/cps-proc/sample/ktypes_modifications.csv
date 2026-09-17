@@ -1,5 +1,5 @@
 structure_id,K-type,DOI,modification,bond_type,monosaccharide,mean_frequency_percent,kpam_reported_modification
-CPS57_K58,K58,10.1016/s0008-6215(00)85559-7,acetylation,O-2,Fuc@3,100.0,YES
+CPS57_K58,K58,10.1016/s0008-6215(00)85559-7,acetylation,O-2,Fuc@C3,100.0,YES
 CPS34_K33,K33,10.1016/s0008-6215(00)83277-2,acetylation,O-6,Man@C3,100.0,YES
 CPS54_K55,K55,10.1016/s0008-6215(00)83701-5,acetylation,O-2,Rha@C2,100.0,YES
 CPS78_K2,K2,10.1128/mbio.03519-23,acetylation,O-6,Man@C1,40.0,NO

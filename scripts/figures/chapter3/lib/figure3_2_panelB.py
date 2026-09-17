@@ -29,9 +29,12 @@ def plot_figure3_2_panelB(
     c = sim["path_jaccard_core"].fillna(0)
     b = sim["path_jaccard_branch"].fillna(0)
 
-    mask_total  = (c > core_thr)   & (b > branch_thr)
-    mask_core   = (c > core_thr)   & (b > 0) & ~mask_total
-    mask_branch = (c > 0)          & (b > branch_thr) & ~mask_total
+    # An edge needs only one component above its threshold. Do not additionally
+    # require the other component to be > 0: that would drop a core-shared edge
+    # between two unbranched structures (branch score NaN -> 0).
+    mask_total  = (c > core_thr) & (b > branch_thr)
+    mask_core   = (c > core_thr) & ~mask_total
+    mask_branch = (b > branch_thr) & ~mask_total
 
     edges = sim[mask_total | mask_core | mask_branch].copy()
     edges = edges.rename(columns={
@@ -42,7 +45,7 @@ def plot_figure3_2_panelB(
     c2 = edges["path_jaccard_core"].fillna(0)
     b2 = edges["path_jaccard_branch"].fillna(0)
     edges["interaction"] = "sim_core"
-    edges.loc[(c2 > 0) & (b2 > branch_thr), "interaction"] = "sim_branch"
+    edges.loc[(b2 > branch_thr), "interaction"] = "sim_branch"
     edges.loc[(c2 > core_thr) & (b2 > branch_thr), "interaction"] = "sim_total"
 
     # Add self-loop rows for singletons so Cytoscape creates a node for each structure
